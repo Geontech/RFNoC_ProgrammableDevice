@@ -40,21 +40,33 @@ RFNoC_ProgrammableDevice_i::~RFNoC_ProgrammableDevice_i()
 
 void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeError, CORBA::SystemException) 
 {
-    uhd::device_addr_t addr;
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
-    uhd::device_addrs_t devices = uhd::device3::find(addr);
+    RFNoC_ProgrammableDevice_base::initialize();
 
-    for (size_t i = 0; i < devices.size(); ++i) {
-        uhd::device_addr_t device = devices[i];
+    // Grab all E3x0 Devices
+    uhd::device_addr_t hint;
+
+    hint.set("type", "e3x0");
+
+    uhd::device_addrs_t e3x0Devices = uhd::device3::find(hint);
+
+    for (size_t i = 0; i < e3x0Devices.size(); ++i) {
+        uhd::device_addr_t device = e3x0Devices[i];
 
         LOG_INFO(RFNoC_ProgrammableDevice_i, device.to_pp_string());
     }
 
-    //setHwLoadRequestsPtr(&hw_load_requests);
-    //setHwLoadStatusesPtr(&hw_load_statuses);
-    //hw_load_statuses.resize(1); // This number defines the number of supported loads
-    RFNoC_ProgrammableDevice_base::initialize();
-    LOG_INFO(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+    // Grab all X3x0 Devices
+    hint.set("type", "x3x0");
+
+    uhd::device_addrs_t x3x0Devices = uhd::device3::find(hint);
+
+    for (size_t i = 0; i < x3x0Devices.size(); ++i) {
+        uhd::device_addr_t device = x3x0Devices[i];
+
+        LOG_INFO(RFNoC_ProgrammableDevice_i, device.to_pp_string());
+    }
 
     /*HwLoadStatusVec *hwLoadStatuses = this->getHwLoadStatuses();
     HwLoadStatusStruct hwLoadStatus;
