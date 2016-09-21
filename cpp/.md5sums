@@ -1,0 +1,13 @@
+de05ad93c5c4c10c999b5df382492e1d  RFNoC_ProgrammableDevice_base.h
+88263604fcb1f38498648ba02939de23  main.cpp
+8bfcd22353c3a57fee561ad86ee2a56b  reconf
+a70bb92cafaf98e9851dd042efc25c86  RFNoC_ProgrammableDevice_base.cpp
+9b99757a31fc145616f58b1a5ce6cde8  RFNoC_ProgrammableDevice.h
+0d848bbdd3ceed466c2a9f9a4b1c8292  RFNoC_ProgrammableDevice_prog_base.h
+fda8630411b3110e26ee1d43d824b51e  configure.ac
+055e778186b834473df8861c4e8d321d  Makefile.am
+5a2505f2a8c848c6c58043ec3e5387a6  struct_props.h
+48c18f3e3a24cd894ff3273c5a440df6  Makefile.am.ide
+a341c104e851f6290705bf3c10f761b9  RFNoC_ProgrammableDevice.cpp
+b87651ea3565402473fb088004430fbf  build.sh
+eafe89154e07dbc351d1db95e7f0e907  entry_point.h
