@@ -589,10 +589,6 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
 
             // Maintain which statuses were used incase of failures
             std::vector<int> usedStatusIndices; 
-            usedStatusIndices.resize(loadRequestVec.size());
-            for (size_t ii = 0; ii < usedStatusIndices.size(); ii++) {
-                usedStatusIndices[ii] = -1;
-            } 
 
             // Iterate through all requests and find available statuses
             for (size_t ii = 0; ii < loadRequestVec.size(); ii++) {
@@ -601,7 +597,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
                 availableStatusIndex = findAvailableHwLoadStatusIndex(loadStatusVec);
                 if (availableStatusIndex > -1) {
                     success |= applyHwLoadRequest(loadRequestVec[ii], loadStatusVec[availableStatusIndex]);
-                    usedStatusIndices[ii] = availableStatusIndex;;
+                    usedStatusIndices.push_back(availableStatusIndex);
                 } else {
                     LOG_ERROR(RFNoC_ProgrammableDevice_prog_base, __FUNCTION__ << 
                         ": Device cannot be allocated against. No load capacity");

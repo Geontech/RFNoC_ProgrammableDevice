@@ -140,7 +140,7 @@ void RFNoC_ProgrammableDevice_base::loadProperties()
     addProperty(hw_load_statuses,
                 "hw_load_statuses",
                 "",
-                "readonly",
+                "readwrite",
                 "",
                 "external",
                 "property");

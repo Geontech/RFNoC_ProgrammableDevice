@@ -39,9 +39,9 @@ class RFNoC_ProgrammableDevice_base : public ExecutableDevice_impl, public virtu
         /// Property: os_version
         std::string os_version;
         /// Property: hw_load_requests
-        std::vector<hw_load_request_struct> hw_load_requests;
+        std::vector<hw_load_request_struct_struct> hw_load_requests;
         /// Property: hw_load_statuses
-        std::vector<hw_load_status_struct> hw_load_statuses;
+        std::vector<hw_load_statuses_struct_struct> hw_load_statuses;
 
     private:
         void construct();

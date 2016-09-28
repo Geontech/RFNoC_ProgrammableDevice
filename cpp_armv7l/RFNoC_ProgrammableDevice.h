@@ -3,10 +3,11 @@
 
 #include "RFNoC_ProgrammableDevice_prog_base.h"
 
-#include <uhd/image_loader.hpp>
+// Change the template to use the property versions of these structures
+// This allows users to see the available loads and perform an allocation
+typedef RFNoC_ProgrammableDevice_prog_base<hw_load_request_struct_struct, hw_load_statuses_struct_struct> RFNoC_ProgrammableDevice_prog_base_type;
 
-typedef RFNoC_ProgrammableDevice_prog_base<HW_LOAD::default_hw_load_request_struct, HW_LOAD::default_hw_load_status_struct> RFNoC_ProgrammableDevice_prog_base_type;
-
+#include "HwLoadStatus.h"
 
 class RFNoC_ProgrammableDevice_i;
 
@@ -21,15 +22,18 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         ~RFNoC_ProgrammableDevice_i();
         int serviceFunction();
         void initialize() throw (CF::LifeCycle::InitializeError, CORBA::SystemException);
-        void releaseObject() throw (CF::LifeCycle::ReleaseError, CORBA::SystemException);
+
+        void setHwLoadStatus(const hw_load_status_object &hwLoadStatus);
 
     protected:
         Device_impl* generatePersona(int argc, char* argv[], ConstructorPtr fnptr, const char* libName);
         bool loadHardware(HwLoadStatusStruct& requestStatus);
         void unloadHardware(const HwLoadStatusStruct& requestStatus);
 
+        virtual bool hwLoadRequestIsValid(const HwLoadRequestStruct& hwLoadRequestStruct);
+
     private:
-        uhd::image_loader::image_loader_args_t image_loader_args;
+        const std::string HARDWARE_ID;
 };
 
 #endif // RFNOC_PROGRAMMABLEDEVICE_I_IMPL_H

@@ -1,6 +1,8 @@
 #ifndef RFNOC_PROGRAMMABLEDEVICE_ENTRY_POINTS_H
 #define RFNOC_PROGRAMMABLEDEVICE_ENTRY_POINTS_H
 
+#include "HwLoadStatus.h"
+
 // ************* AGREED UPON METHOD TO INSTANTIATE DEVICE FROM SHARED OBJECT *************
 //
 //   The following typedef defines how the shared object should be constructed.  Any
@@ -18,6 +20,6 @@
 //          Within 'generatePersona' method located in the resource cpp file:
 //          Device_impl* personaPtr = personaEntryPoint(argc, argv, SharedAPIObject);
 //
-typedef Device_impl* (*ConstructorPtr)(int, char*[], Device_impl* parentDevice);
+typedef Device_impl* (*ConstructorPtr)(int, char*[], Device_impl* parentDevice, hwLoadStatusCallback cb);
 
 #endif // RFNOC_PROGRAMMABLEDEVICE_ENTRY_POINTS_H

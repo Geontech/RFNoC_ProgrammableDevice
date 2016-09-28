@@ -32,8 +32,7 @@
     <action type="eq"/>
   </simple>
   <structsequence id="hw_load_requests" mode="readwrite">
-    <description>The allocation property used for requesting a hardware load.</description>
-    <struct id="hw_load_request">
+    <struct id="hw_load_request_struct">
       <simple id="hardware_id" type="string"/>
       <simple id="load_filepath" type="string"/>
       <simple id="request_id" type="string"/>
@@ -41,13 +40,13 @@
     </struct>
     <configurationkind kindtype="allocation"/>
   </structsequence>
-  <structsequence id="hw_load_statuses" mode="readonly">
-    <struct id="hw_load_status">
-      <simple id="hw_load_status::hardware_id" name="hardware_id" type="string"/>
-      <simple id="hw_load_status::load_filepath" name="load_filepath" type="string"/>
-      <simple id="hw_load_status::request_id" name="request_id" type="string"/>
-      <simple id="hw_load_status::requester_id" name="requester_id" type="string"/>
-      <simple id="hw_load_status::state" name="state" type="ushort">
+  <structsequence id="hw_load_statuses" mode="readwrite">
+    <struct id="hw_load_statuses_struct">
+      <simple id="hw_load_statuses::hardware_id" name="hardware_id" type="string"/>
+      <simple id="hw_load_statuses::load_filepath" name="load_filepath" type="string"/>
+      <simple id="hw_load_statuses::request_id" name="request_id" type="string"/>
+      <simple id="hw_load_statuses::requester_id" name="requester_id" type="string"/>
+      <simple id="hw_load_statuses::state" name="state" type="ushort">
         <enumerations>
           <enumeration label="INACTIVE" value="0"/>
           <enumeration label="ACTIVE" value="1"/>

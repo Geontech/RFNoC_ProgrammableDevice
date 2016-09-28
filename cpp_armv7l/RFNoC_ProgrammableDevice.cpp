@@ -9,103 +9,44 @@
 
 #include "RFNoC_ProgrammableDevice.h"
 
-#include <uhd/device3.hpp>
+#include <boost/filesystem.hpp>
+
+#include "image_loader.hpp"
 
 PREPARE_LOGGING(RFNoC_ProgrammableDevice_i)
 
 RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl) :
-    RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl)
+    RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl),
+    HARDWARE_ID("E310")
 {
 }
 
 RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl, char *compDev) :
-    RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl, compDev)
+    RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl, compDev),
+    HARDWARE_ID("E310")
 {
 }
 
 RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl, CF::Properties capacities) :
-    RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl, capacities)
+    RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl, capacities),
+    HARDWARE_ID("E310")
 {
 }
 
 RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl, CF::Properties capacities, char *compDev) :
-    RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl, capacities, compDev)
+    RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl, capacities, compDev),
+    HARDWARE_ID("E310")
 {
 }
 
 RFNoC_ProgrammableDevice_i::~RFNoC_ProgrammableDevice_i()
 {
-    LOG_INFO(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 }
 
 void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeError, CORBA::SystemException) 
 {
-    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
-
-    RFNoC_ProgrammableDevice_base::initialize();
-
-    // Grab all E3x0 Devices
-    uhd::device_addr_t hint;
-
-    hint.set("type", "e3x0");
-
-    uhd::device_addrs_t e3x0Devices = uhd::device3::find(hint);
-
-    for (size_t i = 0; i < e3x0Devices.size(); ++i) {
-        uhd::device_addr_t device = e3x0Devices[i];
-
-        LOG_INFO(RFNoC_ProgrammableDevice_i, device.to_pp_string());
-    }
-
-    // Grab all X3x0 Devices
-    hint.set("type", "x3x0");
-
-    uhd::device_addrs_t x3x0Devices = uhd::device3::find(hint);
-
-    for (size_t i = 0; i < x3x0Devices.size(); ++i) {
-        uhd::device_addr_t device = x3x0Devices[i];
-
-        LOG_INFO(RFNoC_ProgrammableDevice_i, device.to_pp_string());
-    }
-
-    /*HwLoadStatusVec *hwLoadStatuses = this->getHwLoadStatuses();
-    HwLoadStatusStruct hwLoadStatus;
-
-    hwLoadStatus.hardware_id = "E310";
-    hwLoadStatus.load_filepath = "/usr/share/uhd/images/usrp_e310_fpga_idle.bit";
-    hwLoadStatus.request_id = "";
-    hwLoadStatus.requester_id = "";
-    hwLoadStatus.state = HW_LOAD::INACTIVE;
-    hwLoadStatuses->push_back(hwLoadStatus);*/
-
-    hw_load_status_struct hw_load_status;
-
-    hw_load_status.hardware_id = "E310";
-    hw_load_status.load_filepath = "/usr/share/uhd/images/usrp_e310_fpga_idle.bit";
-    hw_load_status.request_id = "";
-    hw_load_status.requester_id = "";
-    hw_load_status.state = HW_LOAD::INACTIVE;
-
-    this->hw_load_statuses.push_back(hw_load_status);
-
-    this->image_loader_args.args["type"] = "e3x0";
-    this->image_loader_args.load_firmware = false;
-    this->image_loader_args.load_fpga = true;
-    this->image_loader_args.firmware_path = "";
-    this->image_loader_args.fpga_path = "/usr/share/uhd/images/usrp_e310_fpga_idle.bit";
-
-    uhd::image_loader::load(this->image_loader_args);
-
-    start();
-}
-
-void RFNoC_ProgrammableDevice_i::releaseObject() throw (CF::LifeCycle::ReleaseError, CORBA::SystemException)
-{
-    this->image_loader_args.fpga_path = "/usr/share/uhd/images/usrp_e310_fpga_idle.bit";
-
-    uhd::image_loader::load(this->image_loader_args);
-
-    RFNoC_ProgrammableDevice_base::releaseObject();
+    setHwLoadRequestsPtr(&hw_load_requests);
+    setHwLoadStatusesPtr(&hw_load_statuses);
 }
 
 /***********************************************************************************************
@@ -269,10 +210,50 @@ int RFNoC_ProgrammableDevice_i::serviceFunction()
     return NOOP;
 }
 
+void RFNoC_ProgrammableDevice_i::setHwLoadStatus(const hw_load_status_object &hwLoadStatus)
+{
+    LOG_INFO(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    hw_load_statuses_struct_struct hwLoadStatusStruct;
+    hwLoadStatusStruct.hardware_id = hwLoadStatus.hardware_id;
+    hwLoadStatusStruct.load_filepath = hwLoadStatus.load_filepath;
+    hwLoadStatusStruct.request_id = hwLoadStatus.request_id;
+    hwLoadStatusStruct.requester_id = hwLoadStatus.requester_id;
+    hwLoadStatusStruct.state = hwLoadStatus.state;
+
+    this->hw_load_statuses.push_back(hwLoadStatusStruct);
+}
+
+Device_impl* RFNoC_ProgrammableDevice_i::generatePersona(int argc, char* argv[], ConstructorPtr personaEntryPoint, const char* libName)
+{
+    // Generate the Persona Device
+    Device_impl *persona = personaEntryPoint(argc, argv, this, boost::bind(&RFNoC_ProgrammableDevice_i::setHwLoadStatus, this, _1));
+
+    // Something went wrong
+    if (not persona) {
+        LOG_ERROR(RFNoC_ProgrammableDevice_i, "Failed to generate Persona Device. Unable to instantiate Persona Device from library: " << libName);
+        return NULL;
+    }
+
+    return persona;
+}
+
 bool RFNoC_ProgrammableDevice_i::loadHardware(HwLoadStatusStruct& requestStatus) 
 {
     // The hardware may be physically loaded at this point
     LOG_INFO(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    uhd::image_loader::image_loader_args_t loader_args;
+    loader_args.firmware_path = "";
+    loader_args.fpga_path = requestStatus.load_filepath;
+    loader_args.load_firmware = false;
+    loader_args.load_fpga = true;
+
+    if (not uhd::image_loader::load(loader_args)) {
+        LOG_ERROR(RFNoC_ProgrammableDevice_i, "Failed to load hardware.");
+        return false;
+    }
+
     return true;
 }
 
@@ -280,10 +261,29 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
 {
     // The hardware may be physically unloaded at this point
     LOG_INFO(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    uhd::image_loader::image_loader_args_t loader_args;
+    loader_args.firmware_path = "";
+    loader_args.fpga_path = "/usr/share/uhd/images/usrp_e310_fpga_idle.bit";
+    loader_args.load_firmware = false;
+    loader_args.load_fpga = true;
+
+    if (not uhd::image_loader::load(loader_args)) {
+        LOG_ERROR(RFNoC_ProgrammableDevice_i, "Failed to unload hardware.");
+    }
 }
 
-Device_impl* RFNoC_ProgrammableDevice_i::generatePersona(int argc, char* argv[], ConstructorPtr personaEntryPoint, const char* libName) 
+bool RFNoC_ProgrammableDevice_i::hwLoadRequestIsValid(const HwLoadRequestStruct& hwLoadRequestStruct)
 {
-    LOG_INFO(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
-    return personaEntryPoint(argc, argv, this);
+    if (hwLoadRequestStruct.hardware_id != this->HARDWARE_ID) {
+        LOG_WARN(RFNoC_ProgrammableDevice_i, "Failed to validate hardware load request. Mismatched hardware IDs.");
+        return false;
+    }
+
+    if (not boost::filesystem::exists(hwLoadRequestStruct.load_filepath)) {
+        LOG_WARN(RFNoC_ProgrammableDevice_i, "Failed to validate hardware load request. Load file path is invalid.");
+        return false;
+    }
+
+    return true;
 }

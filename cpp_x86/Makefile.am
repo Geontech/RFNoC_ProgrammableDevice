@@ -1,5 +1,5 @@
 ossieName = RFNoC_ProgrammableDevice
-bindir = $(prefix)/dev/devices/RFNoC_ProgrammableDevice/cpp/
+bindir = $(prefix)/dev/devices/RFNoC_ProgrammableDevice/cpp_x86/
 bin_PROGRAMS = RFNoC_ProgrammableDevice
 
 xmldir = $(prefix)/dev/devices/RFNoC_ProgrammableDevice/
@@ -29,7 +29,7 @@ distclean-local:
 # you wish to manually control these options.
 include $(srcdir)/Makefile.am.ide
 RFNoC_ProgrammableDevice_SOURCES = $(redhawk_SOURCES_auto)
-RFNoC_ProgrammableDevice_LDADD = $(SOFTPKG_LIBS) $(PROJECTDEPS_LIBS) $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB) $(BOOST_REGEX_LIB) $(BOOST_SYSTEM_LIB) $(INTERFACEDEPS_LIBS) $(redhawk_LDADD_auto) -ldl -luhd
-RFNoC_ProgrammableDevice_CXXFLAGS = -Wall $(SOFTPKG_CFLAGS) $(PROJECTDEPS_CFLAGS) $(BOOST_CPPFLAGS) $(INTERFACEDEPS_CFLAGS) $(redhawk_INCLUDES_auto) -I/usr/src/debug/uhd/3.9.1.51-r0/git/host/include/
+RFNoC_ProgrammableDevice_LDADD = $(SOFTPKG_LIBS) $(PROJECTDEPS_LIBS) $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB) $(BOOST_REGEX_LIB) $(BOOST_SYSTEM_LIB) $(INTERFACEDEPS_LIBS) $(redhawk_LDADD_auto)
+RFNoC_ProgrammableDevice_CXXFLAGS = -Wall $(SOFTPKG_CFLAGS) $(PROJECTDEPS_CFLAGS) $(BOOST_CPPFLAGS) $(INTERFACEDEPS_CFLAGS) $(redhawk_INCLUDES_auto)
 RFNoC_ProgrammableDevice_LDFLAGS = -Wall $(redhawk_LDFLAGS_auto)
 

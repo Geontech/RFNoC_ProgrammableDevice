@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="ASCII"?>
 <codegen:WaveDevSettings xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:codegen="http://www.redhawk.gov/model/codegen">
-  <implSettings key="cpp">
-    <value outputDir="cpp" template="redhawk.codegen.jinja.cpp.component.pull" generatorId="gov.redhawk.ide.codegen.jinja.cplusplus.CplusplusGenerator" primary="true"/>
+  <implSettings key="cpp_x86">
+    <value outputDir="cpp_x86" template="redhawk.codegen.jinja.cpp.component.pull" generatorId="gov.redhawk.ide.codegen.jinja.cplusplus.CplusplusGenerator" primary="true"/>
+  </implSettings>
+  <implSettings key="cpp_armv7l">
+    <value outputDir="cpp_armv7l" template="redhawk.codegen.jinja.cpp.component.pull" generatorId="gov.redhawk.ide.codegen.jinja.cplusplus.CplusplusGenerator"/>
   </implSettings>
 </codegen:WaveDevSettings>

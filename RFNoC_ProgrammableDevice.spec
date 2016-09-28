@@ -36,10 +36,17 @@ ExecutableDevice %{name}
 
 
 %build
-# Implementation cpp
-pushd cpp
+# Implementation cpp_x86
+pushd cpp_x86
 ./reconf
-%define _bindir %{_prefix}/dev/devices/RFNoC_ProgrammableDevice/cpp
+%define _bindir %{_prefix}/dev/devices/RFNoC_ProgrammableDevice/cpp_x86
+%configure
+make %{?_smp_mflags}
+popd
+# Implementation cpp_armv7l
+pushd cpp_armv7l
+./reconf
+%define _bindir %{_prefix}/dev/devices/RFNoC_ProgrammableDevice/cpp_armv7l
 %configure
 make %{?_smp_mflags}
 popd
@@ -47,9 +54,14 @@ popd
 
 %install
 rm -rf $RPM_BUILD_ROOT
-# Implementation cpp
-pushd cpp
-%define _bindir %{_prefix}/dev/devices/RFNoC_ProgrammableDevice/cpp
+# Implementation cpp_x86
+pushd cpp_x86
+%define _bindir %{_prefix}/dev/devices/RFNoC_ProgrammableDevice/cpp_x86
+make install DESTDIR=$RPM_BUILD_ROOT
+popd
+# Implementation cpp_armv7l
+pushd cpp_armv7l
+%define _bindir %{_prefix}/dev/devices/RFNoC_ProgrammableDevice/cpp_armv7l
 make install DESTDIR=$RPM_BUILD_ROOT
 popd
 
@@ -64,5 +76,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_prefix}/dev/devices/RFNoC_ProgrammableDevice/RFNoC_ProgrammableDevice.scd.xml
 %{_prefix}/dev/devices/RFNoC_ProgrammableDevice/RFNoC_ProgrammableDevice.prf.xml
 %{_prefix}/dev/devices/RFNoC_ProgrammableDevice/RFNoC_ProgrammableDevice.spd.xml
-%{_prefix}/dev/devices/RFNoC_ProgrammableDevice/cpp
+%{_prefix}/dev/devices/RFNoC_ProgrammableDevice/cpp_x86
+%{_prefix}/dev/devices/RFNoC_ProgrammableDevice/cpp_armv7l
 

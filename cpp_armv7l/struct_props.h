@@ -11,13 +11,13 @@
 #include <CF/cf.h>
 #include <ossie/PropertyMap.h>
 
-struct hw_load_request_struct {
-    hw_load_request_struct ()
+struct hw_load_request_struct_struct {
+    hw_load_request_struct_struct ()
     {
     };
 
     static std::string getId() {
-        return std::string("hw_load_request");
+        return std::string("hw_load_request_struct");
     };
 
     std::string hardware_id;
@@ -26,7 +26,7 @@ struct hw_load_request_struct {
     std::string requester_id;
 };
 
-inline bool operator>>= (const CORBA::Any& a, hw_load_request_struct& s) {
+inline bool operator>>= (const CORBA::Any& a, hw_load_request_struct_struct& s) {
     CF::Properties* temp;
     if (!(a >>= temp)) return false;
     const redhawk::PropertyMap& props = redhawk::PropertyMap::cast(*temp);
@@ -45,7 +45,7 @@ inline bool operator>>= (const CORBA::Any& a, hw_load_request_struct& s) {
     return true;
 }
 
-inline void operator<<= (CORBA::Any& a, const hw_load_request_struct& s) {
+inline void operator<<= (CORBA::Any& a, const hw_load_request_struct_struct& s) {
     redhawk::PropertyMap props;
  
     props["hardware_id"] = s.hardware_id;
@@ -58,7 +58,7 @@ inline void operator<<= (CORBA::Any& a, const hw_load_request_struct& s) {
     a <<= props;
 }
 
-inline bool operator== (const hw_load_request_struct& s1, const hw_load_request_struct& s2) {
+inline bool operator== (const hw_load_request_struct_struct& s1, const hw_load_request_struct_struct& s2) {
     if (s1.hardware_id!=s2.hardware_id)
         return false;
     if (s1.load_filepath!=s2.load_filepath)
@@ -70,17 +70,17 @@ inline bool operator== (const hw_load_request_struct& s1, const hw_load_request_
     return true;
 }
 
-inline bool operator!= (const hw_load_request_struct& s1, const hw_load_request_struct& s2) {
+inline bool operator!= (const hw_load_request_struct_struct& s1, const hw_load_request_struct_struct& s2) {
     return !(s1==s2);
 }
 
-struct hw_load_status_struct {
-    hw_load_status_struct ()
+struct hw_load_statuses_struct_struct {
+    hw_load_statuses_struct_struct ()
     {
     };
 
     static std::string getId() {
-        return std::string("hw_load_status");
+        return std::string("hw_load_statuses_struct");
     };
 
     std::string hardware_id;
@@ -90,44 +90,44 @@ struct hw_load_status_struct {
     unsigned short state;
 };
 
-inline bool operator>>= (const CORBA::Any& a, hw_load_status_struct& s) {
+inline bool operator>>= (const CORBA::Any& a, hw_load_statuses_struct_struct& s) {
     CF::Properties* temp;
     if (!(a >>= temp)) return false;
     const redhawk::PropertyMap& props = redhawk::PropertyMap::cast(*temp);
-    if (props.contains("hw_load_status::hardware_id")) {
-        if (!(props["hw_load_status::hardware_id"] >>= s.hardware_id)) return false;
+    if (props.contains("hw_load_statuses::hardware_id")) {
+        if (!(props["hw_load_statuses::hardware_id"] >>= s.hardware_id)) return false;
     }
-    if (props.contains("hw_load_status::load_filepath")) {
-        if (!(props["hw_load_status::load_filepath"] >>= s.load_filepath)) return false;
+    if (props.contains("hw_load_statuses::load_filepath")) {
+        if (!(props["hw_load_statuses::load_filepath"] >>= s.load_filepath)) return false;
     }
-    if (props.contains("hw_load_status::request_id")) {
-        if (!(props["hw_load_status::request_id"] >>= s.request_id)) return false;
+    if (props.contains("hw_load_statuses::request_id")) {
+        if (!(props["hw_load_statuses::request_id"] >>= s.request_id)) return false;
     }
-    if (props.contains("hw_load_status::requester_id")) {
-        if (!(props["hw_load_status::requester_id"] >>= s.requester_id)) return false;
+    if (props.contains("hw_load_statuses::requester_id")) {
+        if (!(props["hw_load_statuses::requester_id"] >>= s.requester_id)) return false;
     }
-    if (props.contains("hw_load_status::state")) {
-        if (!(props["hw_load_status::state"] >>= s.state)) return false;
+    if (props.contains("hw_load_statuses::state")) {
+        if (!(props["hw_load_statuses::state"] >>= s.state)) return false;
     }
     return true;
 }
 
-inline void operator<<= (CORBA::Any& a, const hw_load_status_struct& s) {
+inline void operator<<= (CORBA::Any& a, const hw_load_statuses_struct_struct& s) {
     redhawk::PropertyMap props;
  
-    props["hw_load_status::hardware_id"] = s.hardware_id;
+    props["hw_load_statuses::hardware_id"] = s.hardware_id;
  
-    props["hw_load_status::load_filepath"] = s.load_filepath;
+    props["hw_load_statuses::load_filepath"] = s.load_filepath;
  
-    props["hw_load_status::request_id"] = s.request_id;
+    props["hw_load_statuses::request_id"] = s.request_id;
  
-    props["hw_load_status::requester_id"] = s.requester_id;
+    props["hw_load_statuses::requester_id"] = s.requester_id;
  
-    props["hw_load_status::state"] = s.state;
+    props["hw_load_statuses::state"] = s.state;
     a <<= props;
 }
 
-inline bool operator== (const hw_load_status_struct& s1, const hw_load_status_struct& s2) {
+inline bool operator== (const hw_load_statuses_struct_struct& s1, const hw_load_statuses_struct_struct& s2) {
     if (s1.hardware_id!=s2.hardware_id)
         return false;
     if (s1.load_filepath!=s2.load_filepath)
@@ -141,7 +141,7 @@ inline bool operator== (const hw_load_status_struct& s1, const hw_load_status_st
     return true;
 }
 
-inline bool operator!= (const hw_load_status_struct& s1, const hw_load_status_struct& s2) {
+inline bool operator!= (const hw_load_statuses_struct_struct& s1, const hw_load_statuses_struct_struct& s2) {
     return !(s1==s2);
 }
 

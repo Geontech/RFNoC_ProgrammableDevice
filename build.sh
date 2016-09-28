@@ -14,7 +14,7 @@ if [ "$1" = "rpm" ]; then
         exit 1
     fi
 else
-    for impl in cpp ; do
+    for impl in cpp_x86 cpp_armv7l ; do
         if [ ! -d "$impl" ]; then
             echo "Directory '$impl' does not exist...continuing"
             continue
