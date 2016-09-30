@@ -63,7 +63,7 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Using Device: " << this->usrp->get_pp_string());
 
     // Allow some time for setup
-    boost::this_thread::sleep(1.0);
+    boost::this_thread::sleep(boost::posix_time::seconds(1.0));
 
     // Reset device streaming state
     this->usrp->get_device3()->clear();
