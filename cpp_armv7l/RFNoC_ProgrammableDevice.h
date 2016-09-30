@@ -7,6 +7,8 @@
 // This allows users to see the available loads and perform an allocation
 typedef RFNoC_ProgrammableDevice_prog_base<hw_load_request_struct_struct, hw_load_statuses_struct_struct> RFNoC_ProgrammableDevice_prog_base_type;
 
+#include <uhd/usrp/multi_usrp.hpp>
+
 #include "HwLoadStatus.h"
 
 class RFNoC_ProgrammableDevice_i;
@@ -34,6 +36,7 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
 
     private:
         const std::string HARDWARE_ID;
+        uhd::usrp::multi_usrp::sptr usrp;
 };
 
 #endif // RFNOC_PROGRAMMABLEDEVICE_I_IMPL_H

@@ -47,6 +47,26 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
 {
     setHwLoadRequestsPtr(&hw_load_requests);
     setHwLoadStatusesPtr(&hw_load_statuses);
+
+    // Attempt to get a reference to an e3x0 device
+    uhd::device_addr_t addr;
+
+    addr["type"] = "e3x0";
+
+    this->usrp = uhd::usrp::multi_usrp::make(addr);
+
+    if (not this->usrp->is_device3()) {
+        LOG_FATAL(RFNoC_ProgrammableDevice_i, "Unable to find a suitable USRP Device 3.");
+        throw CF::LifeCycle::InitializeError();
+    }
+
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Using Device: " << this->usrp->get_pp_string());
+
+    // Allow some time for setup
+    boost::this_thread::sleep(1.0);
+
+    // Reset device streaming state
+    this->usrp->get_device3()->clear();
 }
 
 /***********************************************************************************************
@@ -227,7 +247,7 @@ void RFNoC_ProgrammableDevice_i::setHwLoadStatus(const hw_load_status_object &hw
 Device_impl* RFNoC_ProgrammableDevice_i::generatePersona(int argc, char* argv[], ConstructorPtr personaEntryPoint, const char* libName)
 {
     // Generate the Persona Device
-    Device_impl *persona = personaEntryPoint(argc, argv, this, boost::bind(&RFNoC_ProgrammableDevice_i::setHwLoadStatus, this, _1));
+    Device_impl *persona = personaEntryPoint(argc, argv, this, boost::bind(&RFNoC_ProgrammableDevice_i::setHwLoadStatus, this, _1), this->usrp);
 
     // Something went wrong
     if (not persona) {
@@ -243,7 +263,11 @@ bool RFNoC_ProgrammableDevice_i::loadHardware(HwLoadStatusStruct& requestStatus)
     // The hardware may be physically loaded at this point
     LOG_INFO(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
+    uhd::device_addr_t addr;
+    addr["type"] = "e3x0";
+
     uhd::image_loader::image_loader_args_t loader_args;
+    loader_args.args = addr;
     loader_args.firmware_path = "";
     loader_args.fpga_path = requestStatus.load_filepath;
     loader_args.load_firmware = false;
@@ -262,7 +286,11 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
     // The hardware may be physically unloaded at this point
     LOG_INFO(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
+    uhd::device_addr_t addr;
+    addr["type"] = "e3x0";
+
     uhd::image_loader::image_loader_args_t loader_args;
+    loader_args.args = addr;
     loader_args.firmware_path = "";
     loader_args.fpga_path = "/usr/share/uhd/images/usrp_e310_fpga_idle.bit";
     loader_args.load_firmware = false;
