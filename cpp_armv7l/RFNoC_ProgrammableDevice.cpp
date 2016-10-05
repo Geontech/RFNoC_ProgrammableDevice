@@ -67,6 +67,9 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
 
     // Reset device streaming state
     this->usrp->get_device3()->clear();
+
+    // Clear the channels
+    this->usrp->clear_channels();
 }
 
 /***********************************************************************************************
