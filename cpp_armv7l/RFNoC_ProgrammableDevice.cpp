@@ -343,14 +343,18 @@ void RFNoC_ProgrammableDevice_i::initializeRadios()
     size_t i;
 
     for (i = 0; i < this->usrp->get_rx_num_channels(); ++i) {
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "Adding an RX channel");
         this->rxStatuses.push_back(&this->frontend_tuner_status[i]);
     }
 
     for (; i < this->frontend_tuner_status.size(); ++i) {
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "Adding a TX channel");
         this->frontend_tuner_status[i].tuner_type = "TX";
 
         this->txStatuses.push_back(&this->frontend_tuner_status[i]);
     }
+
+    LOG_INFO(RFNoC_ProgrammableDevice_i, "There are " << this->rxStatuses.size() << " RX channels");
 
     for (size_t i = 0; i < this->rxStatuses.size(); ++i) {
         LOG_INFO(RFNoC_ProgrammableDevice_i, "Gathering info for RX Channel " << i);
