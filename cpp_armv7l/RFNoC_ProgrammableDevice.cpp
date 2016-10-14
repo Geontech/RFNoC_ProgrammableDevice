@@ -68,11 +68,11 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
     // Reset device streaming state
     this->usrp->get_device3()->clear();
 
-    // Clear the channels
-    this->usrp->clear_channels();
-
     // Initialize the radios
     initializeRadios();
+
+    // Clear the channels
+    this->usrp->clear_channels();
 
     // Register the frontend callbacks
     this->setAllocationImpl(this->frontend_listener_allocation, this, &RFNoC_ProgrammableDevice_i::frontend_listener_allocation_alloc, &RFNoC_ProgrammableDevice_i::frontend_listener_allocation_dealloc);
