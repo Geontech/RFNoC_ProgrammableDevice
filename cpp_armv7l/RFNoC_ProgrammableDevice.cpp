@@ -366,11 +366,17 @@ void RFNoC_ProgrammableDevice_i::initializeRadios()
 
         uhd::freq_range_t bwRange = this->usrp->get_rx_bandwidth_range(i);
 
-        LOG_INFO(RFNoC_ProgrammableDevice_i, "There are " << bwRange.size() << " bw ranges");
+        std::stringstream ss;
 
         for (size_t j = 0; j < bwRange.size(); ++j) {
-            LOG_INFO(RFNoC_ProgrammableDevice_i, bwRange[j].to_pp_string());
+            if (j != 0) {
+                ss << ",";
+            }
+
+            ss << bwRange[j].start() << ":" << bwRange.step() << ":" << bwRange.stop();
         }
+
+        fts.available_bandwidth = ss.str();
     }
 }
 
