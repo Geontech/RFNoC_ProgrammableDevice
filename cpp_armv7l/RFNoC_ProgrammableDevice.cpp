@@ -74,8 +74,6 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
     // Initialize the radios
     initializeRadios();
 
-    setNumChannels(this->radios.size());
-
     // Register the frontend callbacks
     this->setAllocationImpl(this->frontend_listener_allocation, this, &RFNoC_ProgrammableDevice_i::frontend_listener_allocation_alloc, &RFNoC_ProgrammableDevice_i::frontend_listener_allocation_dealloc);
     this->setAllocationImpl(this->frontend_tuner_allocation, this, &RFNoC_ProgrammableDevice_i::frontend_tuner_allocation_alloc, &RFNoC_ProgrammableDevice_i::frontend_tuner_allocation_dealloc);
@@ -336,15 +334,22 @@ void RFNoC_ProgrammableDevice_i::initializeRadios()
         if (nocBlocks[i].find("Radio") != std::string::npos) {
             LOG_INFO(RFNoC_ProgrammableDevice_i, "Found a radio: " << nocBlocks[i]);
 
-            uhd::rfnoc::block_ctrl_base::sptr radioBlock = this->usrp->get_device3()->find_block_ctrl(nocBlocks[i]);
-
-            if (not radioBlock) {
-                LOG_WARN(RFNoC_ProgrammableDevice_i, "Unable to retrieve pointer to " << nocBlocks[i]);
-                continue;
-            }
-
-            this->radios.push_back(radioBlock);
+            this->radioIDs.push_back(nocBlocks[i]);
         }
+    }
+
+    setNumChannels(this->usrp->get_rx_num_channels() + this->usrp->get_tx_num_channels());
+
+    size_t i;
+
+    for (i = 0; i < this->usrp->get_rx_num_channels(); ++i) {
+        this->rxStatuses.push_back(&this->frontend_tuner_status[i]);
+    }
+
+    for (; i < this->frontend_tuner_status.size(); ++i) {
+        this->frontend_tuner_status[i].tuner_type = "TX";
+
+        this->txStatuses.push_back(&this->frontend_tuner_status[i]);
     }
 }
 

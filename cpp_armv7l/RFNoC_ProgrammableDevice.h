@@ -90,7 +90,9 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
     private:
         const std::string HARDWARE_ID;
         std::map<std::string, std::string> listeners;
-        std::vector<uhd::rfnoc::block_ctrl_base::sptr> radios;
+        std::vector<std::string> radioIDs;
+        std::vector<frontend_tuner_status_struct_struct *> rxStatuses;
+        std::vector<frontend_tuner_status_struct_struct *> txStatuses;
         uhd::usrp::multi_usrp::sptr usrp;
 };
 
