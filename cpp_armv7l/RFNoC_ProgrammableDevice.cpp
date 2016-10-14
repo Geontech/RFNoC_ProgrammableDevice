@@ -353,6 +353,7 @@ void RFNoC_ProgrammableDevice_i::initializeRadios()
     }
 
     for (size_t i = 0; i < this->rxStatuses.size(); ++i) {
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "Gathering info for RX Channel " << i);
         frontend_tuner_status_struct_struct &fts = *this->rxStatuses[i];
 
         double bw = this->usrp->get_rx_bandwidth(i);
@@ -360,6 +361,8 @@ void RFNoC_ProgrammableDevice_i::initializeRadios()
         fts.bandwidth = bw;
 
         uhd::freq_range_t bwRange = this->usrp->get_rx_bandwidth_range(i);
+
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "There are " << bwRange.size() << " bw ranges");
 
         for (size_t j = 0; j < bwRange.size(); ++j) {
             LOG_INFO(RFNoC_ProgrammableDevice_i, bwRange[j].to_pp_string());
