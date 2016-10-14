@@ -373,7 +373,7 @@ void RFNoC_ProgrammableDevice_i::initializeRadios()
                 ss << ",";
             }
 
-            ss << bwRange[j].start() << ":" << bwRange.step() << ":" << bwRange.stop();
+            ss << std::fixed << bwRange[j].start() << ":" << bwRange.step() << ":" << bwRange.stop();
         }
 
         fts.available_bandwidth = ss.str();
