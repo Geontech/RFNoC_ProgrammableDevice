@@ -351,6 +351,20 @@ void RFNoC_ProgrammableDevice_i::initializeRadios()
 
         this->txStatuses.push_back(&this->frontend_tuner_status[i]);
     }
+
+    for (size_t i = 0; i < this->rxStatuses.size(); ++i) {
+        frontend_tuner_status_struct_struct &fts = *this->rxStatuses[i];
+
+        double bw = this->usrp->get_rx_bandwidth(i);
+
+        fts.bandwidth = bw;
+
+        uhd::freq_range_t bwRange = this->usrp->get_rx_bandwidth_range(i);
+
+        for (size_t j = 0; j < bwRange.size(); ++j) {
+            LOG_INFO(RFNoC_ProgrammableDevice_i, bwRange[j].to_pp_string());
+        }
+    }
 }
 
 std::vector<std::string> RFNoC_ProgrammableDevice_i::listNoCBlocks()
