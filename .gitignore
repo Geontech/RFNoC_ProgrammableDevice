@@ -3,6 +3,7 @@ cpp_armv7l/Makefile
 cpp_armv7l/Makefile.in
 cpp_armv7l/RFNoC_ProgrammableDevice-RFNoC_ProgrammableDevice.o
 cpp_armv7l/RFNoC_ProgrammableDevice-RFNoC_ProgrammableDevice_base.o
+cpp_armv7l/RFNoC_ProgrammableDevice-port_impl.o
 cpp_armv7l/RFNoC_ProgrammableDevice-main.o
 cpp_armv7l/aclocal.m4
 cpp_armv7l/autom4te.cache/
@@ -19,6 +20,7 @@ cpp_x86/Makefile
 cpp_x86/Makefile.in
 cpp_x86/RFNoC_ProgrammableDevice-RFNoC_ProgrammableDevice.o
 cpp_x86/RFNoC_ProgrammableDevice-RFNoC_ProgrammableDevice_base.o
+cpp_x86/RFNoC_ProgrammableDevice-port_impl.o
 cpp_x86/RFNoC_ProgrammableDevice-main.o
 cpp_x86/aclocal.m4
 cpp_x86/autom4te.cache/

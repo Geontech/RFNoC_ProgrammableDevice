@@ -44,11 +44,26 @@ RFNoC_ProgrammableDevice_base::RFNoC_ProgrammableDevice_base(char *devMgr_ior, c
 
 RFNoC_ProgrammableDevice_base::~RFNoC_ProgrammableDevice_base()
 {
+    delete DigitalTuner_in;
+    DigitalTuner_in = 0;
+    delete RFInfo_in;
+    RFInfo_in = 0;
+    delete dataShort_out;
+    dataShort_out = 0;
 }
 
 void RFNoC_ProgrammableDevice_base::construct()
 {
     loadProperties();
+
+    DigitalTuner_in = new FRONTEND_DigitalTuner_In_i("DigitalTuner_in", this);
+    addPort("DigitalTuner_in", DigitalTuner_in);
+    RFInfo_in = new FRONTEND_RFInfo_In_i("RFInfo_in", this);
+    addPort("RFInfo_in", RFInfo_in);
+    dataShort_out = new bulkio::OutShortPort("dataShort_out");
+    addPort("dataShort_out", dataShort_out);
+
+    this->addPropertyListener(connectionTable, this, &RFNoC_ProgrammableDevice_base::connectionTableChanged);
 
 }
 
@@ -80,6 +95,11 @@ void RFNoC_ProgrammableDevice_base::releaseObject() throw (CORBA::SystemExceptio
     }
 
     ExecutableDevice_impl::releaseObject();
+}
+
+void RFNoC_ProgrammableDevice_base::connectionTableChanged(const std::vector<connection_descriptor_struct>* oldValue, const std::vector<connection_descriptor_struct>* newValue)
+{
+    dataShort_out->updateConnectionFilter(*newValue);
 }
 
 void RFNoC_ProgrammableDevice_base::loadProperties()
@@ -129,6 +149,24 @@ void RFNoC_ProgrammableDevice_base::loadProperties()
                 "eq",
                 "allocation");
 
+    addProperty(frontend_listener_allocation,
+                frontend_listener_allocation_struct(),
+                "FRONTEND::listener_allocation",
+                "frontend_listener_allocation",
+                "readwrite",
+                "",
+                "external",
+                "allocation");
+
+    addProperty(frontend_tuner_allocation,
+                frontend_tuner_allocation_struct(),
+                "FRONTEND::tuner_allocation",
+                "frontend_tuner_allocation",
+                "readwrite",
+                "",
+                "external",
+                "allocation");
+
     addProperty(hw_load_requests,
                 "hw_load_requests",
                 "",
@@ -141,6 +179,22 @@ void RFNoC_ProgrammableDevice_base::loadProperties()
                 "hw_load_statuses",
                 "",
                 "readwrite",
+                "",
+                "external",
+                "property");
+
+    addProperty(frontend_tuner_status,
+                "FRONTEND::tuner_status",
+                "frontend_tuner_status",
+                "readonly",
+                "",
+                "external",
+                "property");
+
+    addProperty(connectionTable,
+                "connectionTable",
+                "",
+                "readonly",
                 "",
                 "external",
                 "property");

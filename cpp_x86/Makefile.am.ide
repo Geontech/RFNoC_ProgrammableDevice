@@ -12,5 +12,7 @@ redhawk_SOURCES_auto += RFNoC_ProgrammableDevice_prog_base.h
 redhawk_SOURCES_auto += entry_point.h
 redhawk_SOURCES_auto += image_loader.hpp
 redhawk_SOURCES_auto += main.cpp
+redhawk_SOURCES_auto += port_impl.cpp
+redhawk_SOURCES_auto += port_impl.h
 redhawk_SOURCES_auto += struct_props.h
 redhawk_INCLUDES_auto = -I/home/Patrick/git/uhd/host/include

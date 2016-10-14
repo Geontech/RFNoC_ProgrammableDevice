@@ -3,12 +3,16 @@
 # and choosing Resource Configurations -> Exclude from build. Re-include files
 # by opening the Properties dialog of your project and choosing C/C++ Build ->
 # Tool Chain Editor, and un-checking "Exclude resource from build "
-redhawk_SOURCES_auto = RFNoC_ProgrammableDevice.cpp
+redhawk_SOURCES_auto = HwLoadStatus.h
+redhawk_SOURCES_auto += RFNoC_ProgrammableDevice.cpp
 redhawk_SOURCES_auto += RFNoC_ProgrammableDevice.h
 redhawk_SOURCES_auto += RFNoC_ProgrammableDevice_base.cpp
 redhawk_SOURCES_auto += RFNoC_ProgrammableDevice_base.h
 redhawk_SOURCES_auto += RFNoC_ProgrammableDevice_prog_base.h
 redhawk_SOURCES_auto += entry_point.h
+redhawk_SOURCES_auto += image_loader.hpp
 redhawk_SOURCES_auto += main.cpp
+redhawk_SOURCES_auto += port_impl.cpp
+redhawk_SOURCES_auto += port_impl.h
 redhawk_SOURCES_auto += struct_props.h
-
+redhawk_INCLUDES_auto = -I/home/Patrick/git/uhd/host/include
