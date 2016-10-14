@@ -71,6 +71,11 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
     // Clear the channels
     this->usrp->clear_channels();
 
+    // Initialize the radios
+    initializeRadios();
+
+    setNumChannels(this->radios.size());
+
     // Register the frontend callbacks
     this->setAllocationImpl(this->frontend_listener_allocation, this, &RFNoC_ProgrammableDevice_i::frontend_listener_allocation_alloc, &RFNoC_ProgrammableDevice_i::frontend_listener_allocation_dealloc);
     this->setAllocationImpl(this->frontend_tuner_allocation, this, &RFNoC_ProgrammableDevice_i::frontend_tuner_allocation_alloc, &RFNoC_ProgrammableDevice_i::frontend_tuner_allocation_dealloc);
@@ -321,6 +326,45 @@ bool RFNoC_ProgrammableDevice_i::hwLoadRequestIsValid(const HwLoadRequestStruct&
     }
 
     return true;
+}
+
+void RFNoC_ProgrammableDevice_i::initializeRadios()
+{
+    std::vector<std::string> nocBlocks = listNoCBlocks();
+
+    for (size_t i = 0; i < nocBlocks.size(); ++i) {
+        if (nocBlocks[i].find("Radio") != std::string::npos) {
+            LOG_INFO(RFNoC_ProgrammableDevice_i, "Found a radio: " << nocBlocks[i]);
+
+            uhd::rfnoc::block_ctrl_base::sptr radioBlock = this->usrp->get_device3()->find_block_ctrl(nocBlocks[i]);
+
+            if (not radioBlock) {
+                LOG_WARN(RFNoC_ProgrammableDevice_i, "Unable to retrieve pointer to " << nocBlocks[i]);
+                continue;
+            }
+
+            this->radios.push_back(radioBlock);
+        }
+    }
+}
+
+std::vector<std::string> RFNoC_ProgrammableDevice_i::listNoCBlocks()
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    std::vector<std::string> NoCBlocks;
+
+    uhd::property_tree::sptr tree = this->usrp->get_device3()->get_tree();
+
+    std::vector<std::string> xBarItems = tree->list("/mboards/0/xbar/");
+
+    for (size_t i = 0; i < xBarItems.size(); ++i) {
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, xBarItems[i]);
+
+        NoCBlocks.push_back("0/" + xBarItems[i]);
+    }
+
+    return NoCBlocks;
 }
 
 CF::Device::UsageType RFNoC_ProgrammableDevice_i::updateUsageState() {

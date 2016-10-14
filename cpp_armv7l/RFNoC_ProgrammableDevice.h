@@ -35,6 +35,10 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
 
         virtual bool hwLoadRequestIsValid(const HwLoadRequestStruct& hwLoadRequestStruct);
 
+    private:
+        void initializeRadios();
+        std::vector<std::string> listNoCBlocks();
+
     protected:
         typedef std::map<std::string, size_t> string_number_mapping;
         typedef boost::mutex::scoped_lock exclusive_lock;
@@ -86,6 +90,7 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
     private:
         const std::string HARDWARE_ID;
         std::map<std::string, std::string> listeners;
+        std::vector<uhd::rfnoc::block_ctrl_base::sptr> radios;
         uhd::usrp::multi_usrp::sptr usrp;
 };
 
