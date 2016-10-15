@@ -373,10 +373,46 @@ void RFNoC_ProgrammableDevice_i::initializeRadios()
                 ss << ",";
             }
 
-            ss << std::fixed << bwRange[j].start() << ":" << bwRange.step() << ":" << bwRange.stop();
+            ss << std::fixed << bwRange[j].start() << "-" << bwRange.stop();
         }
 
         fts.available_bandwidth = ss.str();
+
+        ss.clear();
+
+        double cf = this->usrp->get_rx_freq(i);
+
+        fts.center_frequency = cf;
+
+        uhd::freq_range_t cfRange = this->usrp->get_rx_freq_range(i);
+
+        for (size_t j = 0; j < cfRange.size(); ++j) {
+            if (j != 0) {
+                ss << ",";
+            }
+
+            ss << std::fixed << cfRange[j].start() << "-" << cfRange[j].stop();
+        }
+
+        fts.available_frequency = ss.str();
+
+        ss.clear();
+
+        double sr = this->usrp->get_rx_rate(i);
+
+        fts.sample_rate = sr;
+
+        uhd::meta_range_t srRange = this->usrp->get_rx_rates(i);
+
+        for (size_t j = 0; j < srRange.size(); ++j) {
+            if (j != 0) {
+                ss << ",";
+            }
+
+            ss << std::fixed << srRange[j].start() << "-" << srRange[j].stop();
+        }
+
+        fts.available_sample_rate = ss.str();
     }
 }
 
