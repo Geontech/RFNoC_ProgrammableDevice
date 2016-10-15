@@ -378,7 +378,7 @@ void RFNoC_ProgrammableDevice_i::initializeRadios()
 
         fts.available_bandwidth = ss.str();
 
-        ss.clear();
+        ss.str(std::string());
 
         double cf = this->usrp->get_rx_freq(i);
 
@@ -396,13 +396,72 @@ void RFNoC_ProgrammableDevice_i::initializeRadios()
 
         fts.available_frequency = ss.str();
 
-        ss.clear();
+        ss.str(std::string());
 
         double sr = this->usrp->get_rx_rate(i);
 
         fts.sample_rate = sr;
 
         uhd::meta_range_t srRange = this->usrp->get_rx_rates(i);
+
+        for (size_t j = 0; j < srRange.size(); ++j) {
+            if (j != 0) {
+                ss << ",";
+            }
+
+            ss << std::fixed << srRange[j].start() << "-" << srRange[j].stop();
+        }
+
+        fts.available_sample_rate = ss.str();
+    }
+
+    for (size_t i = 0; i < this->txStatuses.size(); ++i) {
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "Gathering info for TX Channel " << i);
+        frontend_tuner_status_struct_struct &fts = *this->txStatuses[i];
+
+        double bw = this->usrp->get_tx_bandwidth(i);
+
+        fts.bandwidth = bw;
+
+        uhd::freq_range_t bwRange = this->usrp->get_tx_bandwidth_range(i);
+
+        std::stringstream ss;
+
+        for (size_t j = 0; j < bwRange.size(); ++j) {
+            if (j != 0) {
+                ss << ",";
+            }
+
+            ss << std::fixed << bwRange[j].start() << "-" << bwRange.stop();
+        }
+
+        fts.available_bandwidth = ss.str();
+
+        ss.str(std::string());
+
+        double cf = this->usrp->get_tx_freq(i);
+
+        fts.center_frequency = cf;
+
+        uhd::freq_range_t cfRange = this->usrp->get_tx_freq_range(i);
+
+        for (size_t j = 0; j < cfRange.size(); ++j) {
+            if (j != 0) {
+                ss << ",";
+            }
+
+            ss << std::fixed << cfRange[j].start() << "-" << cfRange[j].stop();
+        }
+
+        fts.available_frequency = ss.str();
+
+        ss.str(std::string());
+
+        double sr = this->usrp->get_tx_rate(i);
+
+        fts.sample_rate = sr;
+
+        uhd::meta_range_t srRange = this->usrp->get_tx_rates(i);
 
         for (size_t j = 0; j < srRange.size(); ++j) {
             if (j != 0) {
