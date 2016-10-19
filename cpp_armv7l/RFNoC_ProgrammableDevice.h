@@ -8,7 +8,7 @@
 typedef RFNoC_ProgrammableDevice_prog_base<hw_load_request_struct_struct, hw_load_statuses_struct_struct> RFNoC_ProgrammableDevice_prog_base_type;
 
 #include <frontend/frontend.h>
-#include <uhd/usrp/multi_usrp.hpp>
+#include <uhd/device3.hpp>
 
 #include "HwLoadStatus.h"
 
@@ -93,7 +93,7 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         std::vector<std::string> radioIDs;
         std::vector<frontend_tuner_status_struct_struct *> rxStatuses;
         std::vector<frontend_tuner_status_struct_struct *> txStatuses;
-        uhd::usrp::multi_usrp::sptr usrp;
+        uhd::device3::sptr usrp;
 };
 
 #endif // RFNOC_PROGRAMMABLEDEVICE_I_IMPL_H

@@ -3,7 +3,7 @@
 
 #include "HwLoadStatus.h"
 
-#include <uhd/usrp/multi_usrp.hpp>
+#include <uhd/device3.hpp>
 
 // ************* AGREED UPON METHOD TO INSTANTIATE DEVICE FROM SHARED OBJECT *************
 //
@@ -22,6 +22,6 @@
 //          Within 'generatePersona' method located in the resource cpp file:
 //          Device_impl* personaPtr = personaEntryPoint(argc, argv, SharedAPIObject);
 //
-typedef Device_impl* (*ConstructorPtr)(int, char*[], Device_impl* parentDevice, hwLoadStatusCallback cb, uhd::usrp::multi_usrp::sptr usrp);
+typedef Device_impl* (*ConstructorPtr)(int, char*[], Device_impl* parentDevice, hwLoadStatusCallback cb, uhd::device3::sptr usrp);
 
 #endif // RFNOC_PROGRAMMABLEDEVICE_ENTRY_POINTS_H

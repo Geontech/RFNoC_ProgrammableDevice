@@ -53,26 +53,21 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
 
     addr["type"] = "e3x0";
 
-    this->usrp = uhd::usrp::multi_usrp::make(addr);
-
-    if (not this->usrp->is_device3()) {
+    try {
+        this->usrp = uhd::device3::make(addr);
+    } catch(uhd::key_error &e) {
         LOG_FATAL(RFNoC_ProgrammableDevice_i, "Unable to find a suitable USRP Device 3.");
         throw CF::LifeCycle::InitializeError();
     }
-
-    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Using Device: " << this->usrp->get_pp_string());
 
     // Allow some time for setup
     boost::this_thread::sleep(boost::posix_time::seconds(1.0));
 
     // Reset device streaming state
-    this->usrp->get_device3()->clear();
+    this->usrp->clear();
 
     // Initialize the radios
     initializeRadios();
-
-    // Clear the channels
-    this->usrp->clear_channels();
 
     // Register the frontend callbacks
     this->setAllocationImpl(this->frontend_listener_allocation, this, &RFNoC_ProgrammableDevice_i::frontend_listener_allocation_alloc, &RFNoC_ProgrammableDevice_i::frontend_listener_allocation_dealloc);
@@ -338,7 +333,7 @@ void RFNoC_ProgrammableDevice_i::initializeRadios()
         }
     }
 
-    setNumChannels(this->usrp->get_rx_num_channels() + this->usrp->get_tx_num_channels());
+    /*setNumChannels(this->usrp->get_rx_num_channels() + this->usrp->get_tx_num_channels());
 
     size_t i;
 
@@ -472,7 +467,7 @@ void RFNoC_ProgrammableDevice_i::initializeRadios()
         }
 
         fts.available_sample_rate = ss.str();
-    }
+    }*/
 }
 
 std::vector<std::string> RFNoC_ProgrammableDevice_i::listNoCBlocks()
@@ -481,7 +476,7 @@ std::vector<std::string> RFNoC_ProgrammableDevice_i::listNoCBlocks()
 
     std::vector<std::string> NoCBlocks;
 
-    uhd::property_tree::sptr tree = this->usrp->get_device3()->get_tree();
+    uhd::property_tree::sptr tree = this->usrp->get_tree();
 
     std::vector<std::string> xBarItems = tree->list("/mboards/0/xbar/");
 
