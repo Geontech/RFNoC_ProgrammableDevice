@@ -17,28 +17,32 @@ PREPARE_LOGGING(RFNoC_ProgrammableDevice_i)
 
 RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl) :
     RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl),
-    HARDWARE_ID("E310")
+    HARDWARE_ID("E310"),
+    IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit")
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 }
 
 RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl, char *compDev) :
     RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl, compDev),
-    HARDWARE_ID("E310")
+    HARDWARE_ID("E310"),
+    IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit")
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 }
 
 RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl, CF::Properties capacities) :
     RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl, capacities),
-    HARDWARE_ID("E310")
+    HARDWARE_ID("E310"),
+    IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit")
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 }
 
 RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl, CF::Properties capacities, char *compDev) :
     RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl, capacities, compDev),
-    HARDWARE_ID("E310")
+    HARDWARE_ID("E310"),
+    IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit")
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 }
@@ -59,7 +63,7 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
     uhd::device_addr_t addr;
 
     addr["type"] = "e3x0";
-    addr["fpga"] = "usrp_e3xx_fpga_idle.bit";
+    addr["fpga"] = this->IDLE_BITFILE_PATH;
 
     try {
         this->usrp = uhd::device3::make(addr);
@@ -310,7 +314,7 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
     uhd::image_loader::image_loader_args_t loader_args;
     loader_args.args = addr;
     loader_args.firmware_path = "";
-    loader_args.fpga_path = "/usr/share/uhd/images/usrp_e310_fpga_idle.bit";
+    loader_args.fpga_path = this->IDLE_BITFILE_PATH;
     loader_args.load_firmware = false;
     loader_args.load_fpga = true;
 
