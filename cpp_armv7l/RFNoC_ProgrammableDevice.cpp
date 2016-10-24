@@ -65,6 +65,8 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
     } catch(uhd::key_error &e) {
         LOG_FATAL(RFNoC_ProgrammableDevice_i, "Unable to find a suitable USRP Device 3.");
         throw CF::LifeCycle::InitializeError();
+    } catch(uhd::lookup_error &e) {
+        LOG_WARN(RFNoC_ProgrammableDevice_i, "A UHD look-up error occurred: " << e.what());
     }
 
     // Allow some time for setup
