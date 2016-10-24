@@ -59,25 +59,23 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
     uhd::device_addr_t addr;
 
     addr["type"] = "e3x0";
+    addr["fpga"] = "usrp_e3xx_fpga_idle.bit";
 
     try {
         this->usrp = uhd::device3::make(addr);
     } catch(uhd::key_error &e) {
         LOG_FATAL(RFNoC_ProgrammableDevice_i, "Unable to find a suitable USRP Device 3.");
         throw CF::LifeCycle::InitializeError();
-    } catch(uhd::lookup_error &e) {
-        LOG_WARN(RFNoC_ProgrammableDevice_i, "A UHD look-up error occurred: " << e.what());
+    } catch(...) {
+        LOG_FATAL(RFNoC_ProgrammableDevice_i, "An error occurred attempting to get a reference to the USRP device.");
+        throw CF::LifeCycle::InitializeError();
     }
 
     // Allow some time for setup
     boost::this_thread::sleep(boost::posix_time::seconds(1.0));
 
-    LOG_INFO(RFNoC_ProgrammableDevice_i, "A");
-
     // Reset device streaming state
     this->usrp->clear();
-
-    LOG_INFO(RFNoC_ProgrammableDevice_i, "B");
 
     // Initialize the radios
     initializeRadios();
