@@ -82,6 +82,8 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
     image_loader_args.load_firmware = false;
     image_loader_args.load_fpga = true;
 
+    uhd::image_loader::load(image_loader_args);
+
     // Allow some time for setup
     boost::this_thread::sleep(boost::posix_time::seconds(1.0));
 
