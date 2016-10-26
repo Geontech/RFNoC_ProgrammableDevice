@@ -63,7 +63,6 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
     uhd::device_addr_t addr;
 
     addr["type"] = "e3x0";
-    addr["fpga"] = this->IDLE_BITFILE_PATH;
 
     try {
         this->usrp = uhd::device3::make(addr);
@@ -74,6 +73,14 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
         LOG_FATAL(RFNoC_ProgrammableDevice_i, "An error occurred attempting to get a reference to the USRP device.");
         throw CF::LifeCycle::InitializeError();
     }
+
+    // Load the idle bitfile
+    uhd::image_loader::image_loader_args_t image_loader_args;
+
+    image_loader_args.firmware_path = "";
+    image_loader_args.fpga_path = this->IDLE_BITFILE_PATH;
+    image_loader_args.load_firmware = false;
+    image_loader_args.load_fpga = true;
 
     // Allow some time for setup
     boost::this_thread::sleep(boost::posix_time::seconds(1.0));
