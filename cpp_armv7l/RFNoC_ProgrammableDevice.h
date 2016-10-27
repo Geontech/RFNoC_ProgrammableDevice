@@ -95,6 +95,7 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         std::vector<frontend_tuner_status_struct_struct *> rxStatuses;
         std::vector<frontend_tuner_status_struct_struct *> txStatuses;
         uhd::device3::sptr usrp;
+        uhd::device_addr_t usrpAddress;
 };
 
 #endif // RFNOC_PROGRAMMABLEDEVICE_I_IMPL_H

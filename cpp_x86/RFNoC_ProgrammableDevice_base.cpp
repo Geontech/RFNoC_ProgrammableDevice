@@ -167,6 +167,15 @@ void RFNoC_ProgrammableDevice_base::loadProperties()
                 "external",
                 "allocation");
 
+    addProperty(target_device,
+                target_device_struct(),
+                "target_device",
+                "target_device",
+                "readwrite",
+                "",
+                "external",
+                "property");
+
     addProperty(hw_load_requests,
                 "hw_load_requests",
                 "",

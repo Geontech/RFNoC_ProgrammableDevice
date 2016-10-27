@@ -59,6 +59,13 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
     setHwLoadRequestsPtr(&hw_load_requests);
     setHwLoadStatusesPtr(&hw_load_statuses);
 
+    LOG_INFO(RFNoC_ProgrammableDevice_i, this->target_device.type);
+
+    this->usrpAddress["name"] = this->target_device.name;
+    this->usrpAddress["no_reload_fpga"] = true;
+    this->usrpAddress["serial"] = this->target_device.serial;
+    this->usrpAddress["type"] = this->target_device.type;
+
     // Reset device streaming state
     //this->usrp->clear();
 
@@ -250,7 +257,7 @@ Device_impl* RFNoC_ProgrammableDevice_i::generatePersona(int argc, char* argv[],
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
     // Generate the Persona Device
-    Device_impl *persona = personaEntryPoint(argc, argv, this, boost::bind(&RFNoC_ProgrammableDevice_i::setHwLoadStatus, this, _1), this->usrp);
+    Device_impl *persona = personaEntryPoint(argc, argv, this, boost::bind(&RFNoC_ProgrammableDevice_i::setHwLoadStatus, this, _1), this->usrpAddress);
 
     // Something went wrong
     if (not persona) {
@@ -279,14 +286,9 @@ bool RFNoC_ProgrammableDevice_i::loadHardware(HwLoadStatusStruct& requestStatus)
     // Allow some time for setup
     boost::this_thread::sleep(boost::posix_time::seconds(1.0));
 
-    // Attempt to get a reference to an e3x0 device
-    uhd::device_addr_t addr;
-
-    addr["type"] = "e3x0";
-    addr["no_reload_fpga"] = true;
-
+    // Attempt to get a reference to the specified device
     try {
-        this->usrp = uhd::device3::make(addr);
+        this->usrp = uhd::device3::make(this->usrpAddress);
     } catch(uhd::key_error &e) {
         LOG_FATAL(RFNoC_ProgrammableDevice_i, "Unable to find a suitable USRP Device 3.");
         throw CF::LifeCycle::InitializeError();
@@ -317,13 +319,8 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
     boost::this_thread::sleep(boost::posix_time::seconds(1.0));
 
     // Attempt to get a reference to an e3x0 device
-    uhd::device_addr_t addr;
-
-    addr["type"] = "e3x0";
-    addr["no_reload_fpga"] = true;
-
     try {
-        this->usrp = uhd::device3::make(addr);
+        this->usrp = uhd::device3::make(this->usrpAddress);
     } catch(uhd::key_error &e) {
         LOG_FATAL(RFNoC_ProgrammableDevice_i, "Unable to find a suitable USRP Device 3.");
         throw CF::LifeCycle::InitializeError();

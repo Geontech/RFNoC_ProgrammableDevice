@@ -177,6 +177,73 @@ inline bool operator!= (const frontend_tuner_allocation_struct& s1, const fronte
     return !(s1==s2);
 }
 
+struct target_device_struct {
+    target_device_struct ()
+    {
+        type = "";
+        ip_address = "";
+        name = "";
+        serial = "";
+    };
+
+    static std::string getId() {
+        return std::string("target_device");
+    };
+
+    std::string type;
+    std::string ip_address;
+    std::string name;
+    std::string serial;
+};
+
+inline bool operator>>= (const CORBA::Any& a, target_device_struct& s) {
+    CF::Properties* temp;
+    if (!(a >>= temp)) return false;
+    const redhawk::PropertyMap& props = redhawk::PropertyMap::cast(*temp);
+    if (props.contains("target::type")) {
+        if (!(props["target::type"] >>= s.type)) return false;
+    }
+    if (props.contains("target::ip_address")) {
+        if (!(props["target::ip_address"] >>= s.ip_address)) return false;
+    }
+    if (props.contains("target::name")) {
+        if (!(props["target::name"] >>= s.name)) return false;
+    }
+    if (props.contains("target::serial")) {
+        if (!(props["target::serial"] >>= s.serial)) return false;
+    }
+    return true;
+}
+
+inline void operator<<= (CORBA::Any& a, const target_device_struct& s) {
+    redhawk::PropertyMap props;
+ 
+    props["target::type"] = s.type;
+ 
+    props["target::ip_address"] = s.ip_address;
+ 
+    props["target::name"] = s.name;
+ 
+    props["target::serial"] = s.serial;
+    a <<= props;
+}
+
+inline bool operator== (const target_device_struct& s1, const target_device_struct& s2) {
+    if (s1.type!=s2.type)
+        return false;
+    if (s1.ip_address!=s2.ip_address)
+        return false;
+    if (s1.name!=s2.name)
+        return false;
+    if (s1.serial!=s2.serial)
+        return false;
+    return true;
+}
+
+inline bool operator!= (const target_device_struct& s1, const target_device_struct& s2) {
+    return !(s1==s2);
+}
+
 struct hw_load_request_struct_struct {
     hw_load_request_struct_struct ()
     {

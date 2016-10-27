@@ -169,4 +169,23 @@ False: Does not need control and can just attach to any currently tasked device 
     </struct>
     <configurationkind kindtype="property"/>
   </structsequence>
+  <struct id="target_device" mode="readwrite" name="target_device">
+    <description>Information used to specify a particular USRP device to target. All fields are optional. First device found that meets the specified criteria is selected.</description>
+    <simple id="target::type" name="type" type="string">
+      <value></value>
+    </simple>
+    <simple id="target::ip_address" name="ip_address" type="string">
+      <description>IP address of the USRP for network connected devices.</description>
+      <value></value>
+    </simple>
+    <simple id="target::name" name="name" type="string">
+      <description>Name of the USRP device</description>
+      <value></value>
+    </simple>
+    <simple id="target::serial" name="serial" type="string">
+      <description>Serial number of the USRP device</description>
+      <value></value>
+    </simple>
+    <configurationkind kindtype="property"/>
+  </struct>
 </properties>

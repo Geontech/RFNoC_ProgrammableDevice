@@ -49,6 +49,8 @@ class RFNoC_ProgrammableDevice_base : public ExecutableDevice_impl, public virtu
         frontend_listener_allocation_struct frontend_listener_allocation;
         /// Property: frontend_tuner_allocation
         frontend_tuner_allocation_struct frontend_tuner_allocation;
+        /// Property: target_device
+        target_device_struct target_device;
         /// Property: hw_load_requests
         std::vector<hw_load_request_struct_struct> hw_load_requests;
         /// Property: hw_load_statuses
