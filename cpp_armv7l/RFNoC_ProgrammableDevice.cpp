@@ -88,7 +88,7 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
     boost::this_thread::sleep(boost::posix_time::seconds(1.0));
 
     // Reset device streaming state
-    this->usrp->clear();
+    //this->usrp->clear();
 
     // Initialize the radios
     //initializeRadios();
