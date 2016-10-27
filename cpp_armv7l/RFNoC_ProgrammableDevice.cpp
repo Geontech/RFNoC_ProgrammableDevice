@@ -59,34 +59,6 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
     setHwLoadRequestsPtr(&hw_load_requests);
     setHwLoadStatusesPtr(&hw_load_statuses);
 
-    // Attempt to get a reference to an e3x0 device
-    uhd::device_addr_t addr;
-
-    addr["type"] = "e3x0";
-
-    try {
-        this->usrp = uhd::device3::make(addr);
-    } catch(uhd::key_error &e) {
-        LOG_FATAL(RFNoC_ProgrammableDevice_i, "Unable to find a suitable USRP Device 3.");
-        throw CF::LifeCycle::InitializeError();
-    } catch(...) {
-        LOG_FATAL(RFNoC_ProgrammableDevice_i, "An error occurred attempting to get a reference to the USRP device.");
-        throw CF::LifeCycle::InitializeError();
-    }
-
-    // Load the idle bitfile
-    uhd::image_loader::image_loader_args_t image_loader_args;
-
-    image_loader_args.firmware_path = "";
-    image_loader_args.fpga_path = this->IDLE_BITFILE_PATH;
-    image_loader_args.load_firmware = false;
-    image_loader_args.load_fpga = true;
-
-    uhd::image_loader::load(image_loader_args);
-
-    // Allow some time for setup
-    boost::this_thread::sleep(boost::posix_time::seconds(1.0));
-
     // Reset device streaming state
     //this->usrp->clear();
 
@@ -294,19 +266,33 @@ bool RFNoC_ProgrammableDevice_i::loadHardware(HwLoadStatusStruct& requestStatus)
     // The hardware may be physically loaded at this point
     LOG_INFO(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
+    // Load the requested bitfile
+    uhd::image_loader::image_loader_args_t image_loader_args;
+
+    image_loader_args.firmware_path = "";
+    image_loader_args.fpga_path = requestStatus.load_filepath;
+    image_loader_args.load_firmware = false;
+    image_loader_args.load_fpga = true;
+
+    uhd::image_loader::load(image_loader_args);
+
+    // Allow some time for setup
+    boost::this_thread::sleep(boost::posix_time::seconds(1.0));
+
+    // Attempt to get a reference to an e3x0 device
     uhd::device_addr_t addr;
+
     addr["type"] = "e3x0";
+    addr["no_reload_fpga"] = true;
 
-    uhd::image_loader::image_loader_args_t loader_args;
-    loader_args.args = addr;
-    loader_args.firmware_path = "";
-    loader_args.fpga_path = requestStatus.load_filepath;
-    loader_args.load_firmware = false;
-    loader_args.load_fpga = true;
-
-    if (not uhd::image_loader::load(loader_args)) {
-        LOG_ERROR(RFNoC_ProgrammableDevice_i, "Failed to load hardware.");
-        return false;
+    try {
+        this->usrp = uhd::device3::make(addr);
+    } catch(uhd::key_error &e) {
+        LOG_FATAL(RFNoC_ProgrammableDevice_i, "Unable to find a suitable USRP Device 3.");
+        throw CF::LifeCycle::InitializeError();
+    } catch(...) {
+        LOG_FATAL(RFNoC_ProgrammableDevice_i, "An error occurred attempting to get a reference to the USRP device.");
+        throw CF::LifeCycle::InitializeError();
     }
 
     return true;
@@ -317,18 +303,33 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
     // The hardware may be physically unloaded at this point
     LOG_INFO(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
+    // Load the idle bitfile
+    uhd::image_loader::image_loader_args_t image_loader_args;
+
+    image_loader_args.firmware_path = "";
+    image_loader_args.fpga_path = this->IDLE_BITFILE_PATH;
+    image_loader_args.load_firmware = false;
+    image_loader_args.load_fpga = true;
+
+    uhd::image_loader::load(image_loader_args);
+
+    // Allow some time for setup
+    boost::this_thread::sleep(boost::posix_time::seconds(1.0));
+
+    // Attempt to get a reference to an e3x0 device
     uhd::device_addr_t addr;
+
     addr["type"] = "e3x0";
+    addr["no_reload_fpga"] = true;
 
-    uhd::image_loader::image_loader_args_t loader_args;
-    loader_args.args = addr;
-    loader_args.firmware_path = "";
-    loader_args.fpga_path = this->IDLE_BITFILE_PATH;
-    loader_args.load_firmware = false;
-    loader_args.load_fpga = true;
-
-    if (not uhd::image_loader::load(loader_args)) {
-        LOG_ERROR(RFNoC_ProgrammableDevice_i, "Failed to unload hardware.");
+    try {
+        this->usrp = uhd::device3::make(addr);
+    } catch(uhd::key_error &e) {
+        LOG_FATAL(RFNoC_ProgrammableDevice_i, "Unable to find a suitable USRP Device 3.");
+        throw CF::LifeCycle::InitializeError();
+    } catch(...) {
+        LOG_FATAL(RFNoC_ProgrammableDevice_i, "An error occurred attempting to get a reference to the USRP device.");
+        throw CF::LifeCycle::InitializeError();
     }
 }
 
