@@ -148,6 +148,7 @@ bool RFNoC_ProgrammableDevice_i::loadHardware(HwLoadStatusStruct& requestStatus)
         this->usrp = uhd::device3::make(this->usrpAddress);
     } catch(uhd::key_error &e) {
         LOG_ERROR(RFNoC_ProgrammableDevice_i, "Unable to find a suitable USRP Device 3.");
+        LOG_ERROR(RFNoC_ProgrammableDevice_i, e.what());
         return false;
     } catch(...) {
         LOG_ERROR(RFNoC_ProgrammableDevice_i, "An error occurred attempting to get a reference to the USRP device.");
