@@ -91,7 +91,7 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
     this->usrp->clear();
 
     // Initialize the radios
-    initializeRadios();
+    //initializeRadios();
 
     // Register the frontend callbacks
     this->setAllocationImpl(this->frontend_listener_allocation, this, &RFNoC_ProgrammableDevice_i::frontend_listener_allocation_alloc, &RFNoC_ProgrammableDevice_i::frontend_listener_allocation_dealloc);
