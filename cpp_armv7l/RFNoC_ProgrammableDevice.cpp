@@ -56,21 +56,39 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
+    // Set the load requests and statuses pointers to the properties
     setHwLoadRequestsPtr(&hw_load_requests);
     setHwLoadStatusesPtr(&hw_load_statuses);
 
-    LOG_INFO(RFNoC_ProgrammableDevice_i, this->target_device.type);
-
+    // Set the usrp address
     this->usrpAddress["name"] = this->target_device.name;
     this->usrpAddress["no_reload_fpga"] = true;
-    this->usrpAddress["serial"] = this->target_device.serial;
-    this->usrpAddress["type"] = this->target_device.type;
+
+    if (not this->target_device.serial.empty()) {
+        this->usrpAddress["serial"] = this->target_device.serial;
+    }
+
+    if (not this->target_device.type.empty()) {
+        this->usrpAddress["type"] = this->target_device.type;
+    }
+
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Trying target_device: " << this->usrpAddress.to_string());
+
+    try {
+        uhd::device3::make(this->usrpAddress);
+    } catch(...) {
+        LOG_FATAL(RFNoC_ProgrammableDevice_i, "Specified address is invalid");
+        throw std::exception();
+    }
 
     // Reset device streaming state
     //this->usrp->clear();
 
     // Initialize the radios
     //initializeRadios();
+
+    // Register the property change listener
+    this->addPropertyListener(this->target_device, this, &RFNoC_ProgrammableDevice_i::target_deviceChanged);
 
     // Register the frontend callbacks
     this->setAllocationImpl(this->frontend_listener_allocation, this, &RFNoC_ProgrammableDevice_i::frontend_listener_allocation_alloc, &RFNoC_ProgrammableDevice_i::frontend_listener_allocation_dealloc);
@@ -517,6 +535,15 @@ std::vector<std::string> RFNoC_ProgrammableDevice_i::listNoCBlocks()
     }
 
     return NoCBlocks;
+}
+
+void RFNoC_ProgrammableDevice_i::target_deviceChanged(const target_device_struct &oldValue, const target_device_struct &newValue)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    LOG_WARN(RFNoC_ProgrammableDevice_i, "Attempted to set the target_device while running. Must be set in DCD file.");
+
+    this->target_device = oldValue;
 }
 
 CF::Device::UsageType RFNoC_ProgrammableDevice_i::updateUsageState() {

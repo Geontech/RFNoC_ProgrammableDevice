@@ -39,6 +39,8 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         void initializeRadios();
         std::vector<std::string> listNoCBlocks();
 
+        void target_deviceChanged(const target_device_struct &oldValue, const target_device_struct &newValue);
+
     protected:
         typedef std::map<std::string, size_t> string_number_mapping;
         typedef boost::mutex::scoped_lock exclusive_lock;
