@@ -29,6 +29,9 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         int serviceFunction();
         void initialize() throw (CF::LifeCycle::InitializeError, CORBA::SystemException);
 
+        CORBA::Boolean allocateCapacity(const CF::Properties& capacities) throw (CF::Device::InvalidState, CF::Device::InvalidCapacity, CF::Device::InsufficientCapacity, CORBA::SystemException);
+        void deallocateCapacity(const CF::Properties& capacities) throw (CF::Device::InvalidState, CF::Device::InvalidCapacity, CORBA::SystemException);
+
         void setHwLoadStatus(const hw_load_status_object &hwLoadStatus);
 
     protected:
@@ -83,13 +86,6 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         // Configure tuner - gets called during allocation
         virtual bool enableTuner(size_t tuner_id, bool enable);
         virtual bool listenerRequestValidation(frontend_tuner_allocation_struct &request, size_t tuner_id);
-
-    private:
-        bool frontend_listener_allocation_alloc(const frontend_listener_allocation_struct &newAllocation);
-        void frontend_listener_allocation_dealloc(const frontend_listener_allocation_struct &newDeallocation);
-
-        bool frontend_tuner_allocation_alloc(const frontend_tuner_allocation_struct &newAllocation);
-        void frontend_tuner_allocation_dealloc(const frontend_tuner_allocation_struct &newDeallocation);
 
     private:
         std::vector<uhd::rfnoc::ddc_block_ctrl::sptr> ddcs;
