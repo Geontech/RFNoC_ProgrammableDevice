@@ -169,6 +169,9 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
     // The hardware may be physically unloaded at this point
     LOG_INFO(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
+    // Reset the USRP device
+    this->usrp->clear();
+
     // Load the idle bitfile
     uhd::image_loader::image_loader_args_t image_loader_args;
 
@@ -184,6 +187,12 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
 
     // Clear the graph
     this->radioChainGraph.reset();
+
+    // Clear the map of tuner IDs to radios
+    this->tunerIDToRadio.clear();
+
+    // Clear the map of tuner IDs to radio use status
+    this->tunerIDUsed.clear();
 
     // Clear the radios, DDCs, and DUCs
     this->radios.clear();
@@ -327,7 +336,11 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
             fts.center_frequency = this->radios[i]->get_rx_frequency(j);
             fts.sample_rate = this->radios[i]->get_output_samp_rate(j);
 
+            this->tunerIDToRadio[currentStatus] = std::make_pair(this->radios[i], j);
+            this->tunerIDUsed[currentStatus] = false;
+
             ++currentStatus;
+            this->rxStatuses.push_back(&fts);
         }
     }
 
@@ -340,8 +353,13 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
             fts.bandwidth = this->radios[i]->get_input_samp_rate(j);
             fts.center_frequency = this->radios[i]->get_tx_frequency(j);
             fts.sample_rate = this->radios[i]->get_input_samp_rate(j);
+            fts.tuner_type = "TX";
+
+            this->tunerIDToRadio[currentStatus] = std::make_pair(this->radios[i], j);
+            this->tunerIDUsed[currentStatus] = false;
 
             ++currentStatus;
+            this->txStatuses.push_back(&fts);
         }
     }
 }
@@ -413,6 +431,91 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
     ************************************************************/
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
+    // Get the radio and channel for the requested tuner
+    std::map<size_t, std::pair<uhd::rfnoc::radio_ctrl::sptr, size_t> >::iterator it;
+
+    it = this->tunerIDToRadio.find(tuner_id);
+
+    if (it == this->tunerIDToRadio.end()) {
+        LOG_ERROR(RFNoC_ProgrammableDevice_i, "Failed to set tuning: Invalid tuner ID");
+        return false;
+    }
+
+    // Make sure it isn't already in use
+    if (this->tunerIDUsed[tuner_id]) {
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Failed to set tuning: Requested tuner already in use");
+        return false;
+    }
+
+    // Attempt to set the radio with the requested values
+    uhd::rfnoc::radio_ctrl::sptr radio = it->second.first;
+    size_t channel = it->second.second;
+
+    if (not frontend::validateRequest(16e6, 16e6, request.bandwidth)) {
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Failed to set tuning: Bandwidth doesn't match 16 MHz");
+        return false;
+    }
+
+    if (not frontend::validateRequest(70e6, 6000e6, request.center_frequency)) {
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Failed to set tuning: Center frequency not between 70 MHz and 6 GHz");
+        return false;
+    }
+
+    if (not frontend::validateRequest(16e6, 16e6, request.sample_rate)) {
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Failed to set tuning: Sample rate doesn't match 16 MSps");
+        return false;
+    }
+
+    // Set the center frequency
+    double actualCF;
+
+    if (request.tuner_type == "RX_DIGITIZER") {
+        bool succeeded = false;
+
+        try {
+            actualCF = radio->set_rx_frequency(request.center_frequency, channel);
+
+            LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Requested CF: " << request.center_frequency << ", Actual CF: " << actualCF);
+
+            succeeded = true;
+        } catch(...) {
+
+        }
+
+        if (not succeeded) {
+            LOG_WARN(RFNoC_ProgrammableDevice_i, "Failed to set tuning: Unable to set center frequency");
+            return false;
+        }
+    } else if (request.tuner_type == "TX") {
+        bool succeeded = false;
+
+        try {
+            actualCF = radio->set_tx_frequency(request.center_frequency, channel);
+
+            LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Requested CF: " << request.center_frequency << ", Actual CF: " << actualCF);
+
+            succeeded = true;
+        } catch(...) {
+
+        }
+
+        if (not succeeded) {
+            LOG_WARN(RFNoC_ProgrammableDevice_i, "Failed to set tuning: Unable to set center frequency");
+            return false;
+        }
+    } else {
+        LOG_WARN(RFNoC_ProgrammableDevice_i, "Failed to set tuning: Invalid tuner type");
+        return false;
+    }
+
+    // Set the frontend tuner status
+    fts.bandwidth = 16e6;
+    fts.center_frequency = actualCF;
+    fts.sample_rate = 16e6;
+
+    // Mark this radio as used
+    this->tunerIDUsed[tuner_id];
+
     return true;
 }
 
@@ -424,6 +527,15 @@ bool RFNoC_ProgrammableDevice_i::deviceDeleteTuning(
     return true if the tune deletion succeeded, and false if it failed
     ************************************************************/
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    std::map<size_t, bool>::iterator it = this->tunerIDUsed.find(tuner_id);
+
+    if (it == this->tunerIDUsed.end()) {
+        LOG_ERROR(RFNoC_ProgrammableDevice_i, "Failed to set tuning: Invalid tuner ID");
+        return false;
+    }
+
+    this->tunerIDUsed[tuner_id] = false;
 
     return true;
 }

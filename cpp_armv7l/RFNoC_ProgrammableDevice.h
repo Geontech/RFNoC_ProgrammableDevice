@@ -101,6 +101,8 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         std::vector<std::string> radioIDs;
         std::vector<uhd::rfnoc::radio_ctrl::sptr> radios;
         std::vector<frontend_tuner_status_struct_struct *> rxStatuses;
+        std::map<size_t, std::pair<uhd::rfnoc::radio_ctrl::sptr, size_t> > tunerIDToRadio;
+        std::map<size_t, bool> tunerIDUsed;
         std::vector<frontend_tuner_status_struct_struct *> txStatuses;
         uhd::device3::sptr usrp;
         uhd::device_addr_t usrpAddress;
