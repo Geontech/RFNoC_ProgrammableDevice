@@ -155,6 +155,9 @@ bool RFNoC_ProgrammableDevice_i::loadHardware(HwLoadStatusStruct& requestStatus)
         return false;
     }
 
+    // Attempt to get the radios, DDCs, and DUCs
+    initializeRadioChain();
+
     return true;
 }
 
@@ -175,6 +178,11 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
 
     // Clear the USRP pointer
     this->usrp.reset();
+
+    // Clear the radios, DDCs, and DUCs
+    this->radios.clear();
+    this->ddcs.clear();
+    this->ducs.clear();
 }
 
 bool RFNoC_ProgrammableDevice_i::hwLoadRequestIsValid(const HwLoadRequestStruct& hwLoadRequestStruct)
@@ -196,25 +204,64 @@ bool RFNoC_ProgrammableDevice_i::hwLoadRequestIsValid(const HwLoadRequestStruct&
     return true;
 }
 
-void RFNoC_ProgrammableDevice_i::initializeRadios()
+void RFNoC_ProgrammableDevice_i::initializeRadioChain()
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
-    std::vector<std::string> nocBlocks = listNoCBlocks();
+    // Variables for the number of channels
+    size_t num_rx_channels = 0;
+    size_t num_tx_channels = 0;
 
-    for (size_t i = 0; i < nocBlocks.size(); ++i) {
-        if (nocBlocks[i].find("Radio") != std::string::npos) {
-            LOG_INFO(RFNoC_ProgrammableDevice_i, "Found a radio: " << nocBlocks[i]);
+    // Grab the radio blocks
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Searching for radio blocks");
+    std::vector<uhd::rfnoc::block_id_t> radio_block_ids = this->usrp->find_blocks("Radio");
 
-            this->radioIDs.push_back(nocBlocks[i]);
-        }
+    for (size_t i = 0; i < radio_block_ids.size(); ++i) {
+        uhd::rfnoc::block_id_t blockId = radio_block_ids[i];
+
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Found radio block with ID: " << blockId.to_string());
+
+        uhd::rfnoc::radio_ctrl::sptr radio = this->usrp->get_block_ctrl<uhd::rfnoc::radio_ctrl>(blockId);
+
+        num_rx_channels += radio->get_output_ports().size();
+        num_tx_channels += radio->get_input_ports().size();
+
+        this->radios.push_back(radio);
     }
 
-    /*setNumChannels(this->usrp->get_rx_num_channels() + this->usrp->get_tx_num_channels());
+    // Grab the DDC blocks
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Searching for DDC blocks");
+    std::vector<uhd::rfnoc::block_id_t> ddc_block_ids = this->usrp->find_blocks("DDC");
+
+    for (size_t i = 0; i < ddc_block_ids.size(); ++i) {
+        uhd::rfnoc::block_id_t blockId = ddc_block_ids[i];
+
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Found DDC block with ID: " << blockId.to_string());
+
+        uhd::rfnoc::ddc_block_ctrl::sptr ddc = this->usrp->get_block_ctrl<uhd::rfnoc::ddc_block_ctrl>(blockId);
+
+        this->ddcs.push_back(ddc);
+    }
+
+    // Grab the DUC blocks
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Searching for DUC blocks");
+    std::vector<uhd::rfnoc::block_id_t> duc_block_ids = this->usrp->find_blocks("DUC");
+
+    for (size_t i = 0; i < duc_block_ids.size(); ++i) {
+        uhd::rfnoc::block_id_t blockId = duc_block_ids[i];
+
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Found DUC block with ID: " << blockId.to_string());
+
+        uhd::rfnoc::duc_block_ctrl::sptr duc = this->usrp->get_block_ctrl<uhd::rfnoc::duc_block_ctrl>(blockId);
+
+        this->ducs.push_back(duc);
+    }
+
+    setNumChannels(num_rx_channels + num_tx_channels);
 
     size_t i;
 
-    for (i = 0; i < this->usrp->get_rx_num_channels(); ++i) {
+    for (i = 0; i < num_rx_channels; ++i) {
         LOG_INFO(RFNoC_ProgrammableDevice_i, "Adding an RX channel");
         this->rxStatuses.push_back(&this->frontend_tuner_status[i]);
     }
@@ -227,8 +274,9 @@ void RFNoC_ProgrammableDevice_i::initializeRadios()
     }
 
     LOG_INFO(RFNoC_ProgrammableDevice_i, "There are " << this->rxStatuses.size() << " RX channels");
+    LOG_INFO(RFNoC_ProgrammableDevice_i, "There are " << this->txStatuses.size() << " TX channels");
 
-    for (size_t i = 0; i < this->rxStatuses.size(); ++i) {
+    /*for (size_t i = 0; i < this->rxStatuses.size(); ++i) {
         LOG_INFO(RFNoC_ProgrammableDevice_i, "Gathering info for RX Channel " << i);
         frontend_tuner_status_struct_struct &fts = *this->rxStatuses[i];
 
@@ -345,25 +393,6 @@ void RFNoC_ProgrammableDevice_i::initializeRadios()
 
         fts.available_sample_rate = ss.str();
     }*/
-}
-
-std::vector<std::string> RFNoC_ProgrammableDevice_i::listNoCBlocks()
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
-
-    std::vector<std::string> NoCBlocks;
-
-    uhd::property_tree::sptr tree = this->usrp->get_tree();
-
-    std::vector<std::string> xBarItems = tree->list("/mboards/0/xbar/");
-
-    for (size_t i = 0; i < xBarItems.size(); ++i) {
-        LOG_DEBUG(RFNoC_ProgrammableDevice_i, xBarItems[i]);
-
-        NoCBlocks.push_back("0/" + xBarItems[i]);
-    }
-
-    return NoCBlocks;
 }
 
 void RFNoC_ProgrammableDevice_i::target_deviceChanged(const target_device_struct &oldValue, const target_device_struct &newValue)

@@ -9,6 +9,9 @@ typedef RFNoC_ProgrammableDevice_prog_base<hw_load_request_struct_struct, hw_loa
 
 #include <frontend/frontend.h>
 #include <uhd/device3.hpp>
+#include <uhd/rfnoc/ddc_block_ctrl.hpp>
+#include <uhd/rfnoc/duc_block_ctrl.hpp>
+#include <uhd/rfnoc/radio_ctrl.hpp>
 
 #include "HwLoadStatus.h"
 
@@ -36,8 +39,7 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         virtual bool hwLoadRequestIsValid(const HwLoadRequestStruct& hwLoadRequestStruct);
 
     private:
-        void initializeRadios();
-        std::vector<std::string> listNoCBlocks();
+        void initializeRadioChain();
 
         void target_deviceChanged(const target_device_struct &oldValue, const target_device_struct &newValue);
 
@@ -90,10 +92,13 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         void frontend_tuner_allocation_dealloc(const frontend_tuner_allocation_struct &newDeallocation);
 
     private:
+        std::vector<uhd::rfnoc::ddc_block_ctrl::sptr> ddcs;
+        std::vector<uhd::rfnoc::duc_block_ctrl::sptr> ducs;
         const std::string HARDWARE_ID;
         const std::string IDLE_BITFILE_PATH;
         std::map<std::string, std::string> listeners;
         std::vector<std::string> radioIDs;
+        std::vector<uhd::rfnoc::radio_ctrl::sptr> radios;
         std::vector<frontend_tuner_status_struct_struct *> rxStatuses;
         std::vector<frontend_tuner_status_struct_struct *> txStatuses;
         uhd::device3::sptr usrp;
