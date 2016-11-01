@@ -85,9 +85,7 @@ CORBA::Boolean RFNoC_ProgrammableDevice_i::allocateCapacity(const CF::Properties
         CF::Device::InsufficientCapacity,
         CORBA::SystemException)
 {
-    if (not RFNoC_ProgrammableDevice_prog_base_type::allocateCapacity(capacities)) {
-        return false;
-    }
+    RFNoC_ProgrammableDevice_prog_base_type::allocateCapacity(capacities);
 
     if (this->tuner_allocation_ids.size() != this->frontend_tuner_status.size()) {
         this->tuner_allocation_ids.resize(this->frontend_tuner_status.size());
