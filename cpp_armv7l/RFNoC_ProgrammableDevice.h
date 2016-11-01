@@ -97,6 +97,7 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         const std::string HARDWARE_ID;
         const std::string IDLE_BITFILE_PATH;
         std::map<std::string, std::string> listeners;
+        uhd::rfnoc::graph::sptr radioChainGraph;
         std::vector<std::string> radioIDs;
         std::vector<uhd::rfnoc::radio_ctrl::sptr> radios;
         std::vector<frontend_tuner_status_struct_struct *> rxStatuses;
