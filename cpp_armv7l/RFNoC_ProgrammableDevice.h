@@ -13,7 +13,7 @@ typedef RFNoC_ProgrammableDevice_prog_base<hw_load_request_struct_struct, hw_loa
 #include <uhd/rfnoc/duc_block_ctrl.hpp>
 #include <uhd/rfnoc/radio_ctrl.hpp>
 
-#include "HwLoadStatus.h"
+#include "RFNoC_Persona.h"
 
 class RFNoC_ProgrammableDevice_i;
 
@@ -32,6 +32,8 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         CORBA::Boolean allocateCapacity(const CF::Properties& capacities) throw (CF::Device::InvalidState, CF::Device::InvalidCapacity, CF::Device::InsufficientCapacity, CORBA::SystemException);
         void deallocateCapacity(const CF::Properties& capacities) throw (CF::Device::InvalidState, CF::Device::InvalidCapacity, CORBA::SystemException);
 
+        bool connectRadioRX(const CORBA::ULong &portHash, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort);
+        bool connectRadioTX(const std::string &allocationID, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort);
         void setHwLoadStatus(const hw_load_status_object &hwLoadStatus);
 
     protected:
@@ -88,6 +90,7 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         virtual bool listenerRequestValidation(frontend_tuner_allocation_struct &request, size_t tuner_id);
 
     private:
+        std::map<std::string, std::pair<uhd::rfnoc::radio_ctrl::sptr, size_t> > allocationIDToRadio;
         std::vector<uhd::rfnoc::ddc_block_ctrl::sptr> ddcs;
         std::vector<uhd::rfnoc::duc_block_ctrl::sptr> ducs;
         const std::string HARDWARE_ID;

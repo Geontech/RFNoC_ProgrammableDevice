@@ -382,6 +382,73 @@ void RFNoC_ProgrammableDevice_i::deallocateCapacity(const CF::Properties& capaci
     RFNoC_ProgrammableDevice_prog_base_type::deallocateCapacity(capacities);
 }
 
+bool RFNoC_ProgrammableDevice_i::connectRadioRX(const CORBA::ULong &portHash, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    if (not this->radioChainGraph) {
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Unable to connect radio without graph");
+        return false;
+    }
+
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Checking output port for hash " << portHash << " to connecto radio chain to " << blockToConnect.to_string());
+
+    bulkio::OutShortPort::ConnectionsList connections = this->dataShort_out->getConnections();
+
+    for (size_t i = 0; i < connections.size(); ++i) {
+        CORBA::ULong providesHash = connections[i].first->_hash(1024);
+
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Checking hash " << providesHash);
+
+        if (providesHash == portHash) {
+            LOG_INFO(RFNoC_ProgrammableDevice_i, "Found correct connection, retrieving radio information");
+            std::string connectionID = connections[i].second;
+
+            std::map<std::string, std::pair<uhd::rfnoc::radio_ctrl::sptr, size_t> >::iterator it = this->allocationIDToRadio.find(connectionID);
+
+            if (it == this->allocationIDToRadio.end()) {
+                LOG_WARN(RFNoC_ProgrammableDevice_i, "Unable to find radio for allocation/connection ID: " << connectionID);
+                continue;
+            }
+
+            uhd::rfnoc::radio_ctrl::sptr radio = it->second.first;
+            size_t radioPort = it->second.second;
+
+            this->radioChainGraph->connect(radio->get_block_id(), radioPort, blockToConnect, blockPort);
+
+            return true;
+        }
+    }
+
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "No connection possible");
+
+    return false;
+}
+
+bool RFNoC_ProgrammableDevice_i::connectRadioTX(const std::string &allocationID, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    if (not this->radioChainGraph) {
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Unable to connect radio without graph");
+        return false;
+    }
+
+    std::map<std::string, std::pair<uhd::rfnoc::radio_ctrl::sptr, size_t> >::iterator it = this->allocationIDToRadio.find(allocationID);
+
+    if (it == this->allocationIDToRadio.end()) {
+        LOG_WARN(RFNoC_ProgrammableDevice_i, "Attempted to connect to radio with unknown allocation ID: " << allocationID);
+        return false;
+    }
+
+    uhd::rfnoc::radio_ctrl::sptr radio = it->second.first;
+    size_t radioPort = it->second.second;
+
+    this->radioChainGraph->connect(blockToConnect, blockPort, radio->get_block_id(), radioPort);
+
+    return true;
+}
+
 int RFNoC_ProgrammableDevice_i::serviceFunction()
 {
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "serviceFunction() example log message");
@@ -407,8 +474,12 @@ Device_impl* RFNoC_ProgrammableDevice_i::generatePersona(int argc, char* argv[],
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
+    hwLoadStatusCallback hwLoadStatusCb = boost::bind(&RFNoC_ProgrammableDevice_i::setHwLoadStatus, this, _1);
+    connectRadioRXCallback connectionRadioRXCb = boost::bind(&RFNoC_ProgrammableDevice_i::connectRadioRX, this, _1, _2, _3);
+    connectRadioTXCallback connectionRadioTXCb = boost::bind(&RFNoC_ProgrammableDevice_i::connectRadioTX, this, _1, _2, _3);
+
     // Generate the Persona Device
-    Device_impl *persona = personaEntryPoint(argc, argv, this, boost::bind(&RFNoC_ProgrammableDevice_i::setHwLoadStatus, this, _1), this->usrpAddress);
+    Device_impl *persona = personaEntryPoint(argc, argv, this, hwLoadStatusCb, connectionRadioRXCb, connectionRadioTXCb, this->usrpAddress);
 
     // Something went wrong
     if (not persona) {
@@ -481,6 +552,9 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
 
     // Clear the graph
     this->radioChainGraph.reset();
+
+    // Clear the map of allocation IDs to radios
+    this->allocationIDToRadio.clear();
 
     // Clear the map of tuner IDs to radios
     this->tunerIDToRadio.clear();
@@ -807,6 +881,9 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
     fts.center_frequency = actualCF;
     fts.sample_rate = 16e6;
 
+    // Map the allocation ID to the radio
+    this->allocationIDToRadio[request.allocation_id] = it->second;
+
     // Mark this radio as used
     this->tunerIDUsed[tuner_id];
 
@@ -827,6 +904,14 @@ bool RFNoC_ProgrammableDevice_i::deviceDeleteTuning(
     if (it == this->tunerIDUsed.end()) {
         LOG_ERROR(RFNoC_ProgrammableDevice_i, "Failed to set tuning: Invalid tuner ID");
         return false;
+    }
+
+    const std::string allocationId = getControlAllocationId(tuner_id);
+
+    std::map<std::string, std::pair<uhd::rfnoc::radio_ctrl::sptr, size_t> >::iterator it2 = this->allocationIDToRadio.find(allocationId);
+
+    if (it2 != this->allocationIDToRadio.end()) {
+        this->allocationIDToRadio.erase(it2);
     }
 
     this->tunerIDUsed[tuner_id] = false;

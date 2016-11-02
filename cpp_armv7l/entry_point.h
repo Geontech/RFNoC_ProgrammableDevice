@@ -1,9 +1,8 @@
 #ifndef RFNOC_PROGRAMMABLEDEVICE_ENTRY_POINTS_H
 #define RFNOC_PROGRAMMABLEDEVICE_ENTRY_POINTS_H
 
-#include "HwLoadStatus.h"
-
 #include <uhd/types/device_addr.hpp>
+#include "RFNoC_Persona.h"
 
 // ************* AGREED UPON METHOD TO INSTANTIATE DEVICE FROM SHARED OBJECT *************
 //
@@ -22,6 +21,13 @@
 //          Within 'generatePersona' method located in the resource cpp file:
 //          Device_impl* personaPtr = personaEntryPoint(argc, argv, SharedAPIObject);
 //
-typedef Device_impl* (*ConstructorPtr)(int, char*[], Device_impl* parentDevice, hwLoadStatusCallback cb, uhd::device_addr_t usrpAddress);
+typedef Device_impl* (*ConstructorPtr)(
+        int,
+        char*[],
+        Device_impl* parentDevice,
+        hwLoadStatusCallback hwLoadStatusCb,
+        connectRadioRXCallback connectRadioRXCb,
+        connectRadioTXCallback connectRadioTXCb,
+        uhd::device_addr_t usrpAddress);
 
 #endif // RFNOC_PROGRAMMABLEDEVICE_ENTRY_POINTS_H
