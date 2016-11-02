@@ -76,6 +76,9 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
 
     // Register the property change listener
     this->addPropertyListener(this->target_device, this, &RFNoC_ProgrammableDevice_i::target_deviceChanged);
+
+    // Set the usage state to IDLE
+    setUsageState(CF::Device::IDLE);
 }
 
 CORBA::Boolean RFNoC_ProgrammableDevice_i::allocateCapacity(const CF::Properties& capacities)
