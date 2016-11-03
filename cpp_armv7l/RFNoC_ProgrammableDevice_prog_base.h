@@ -740,13 +740,16 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
                 for (iter = _personaMap.begin(); iter != _personaMap.end(); iter++) {
                     LOG_DEBUG(RFNoC_ProgrammableDevice_prog_base, "Looking for persona name " << iter->first << " in allRequesterIds");
                     if (strVecContainsStr(allRequesterIds, iter->first)) {
+                        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "It does contain it");
                         continue; // Skip the running personas
                     }
                     LOG_DEBUG(RFNoC_ProgrammableDevice_prog_base, __FUNCTION__ <<
                         ": Locking device '" << ossie::corba::returnString(iter->second->identifier()) << "'");
                     iter->second->adminState(CF::Device::LOCKED);
                 }
+                LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Before setAdminState");
                 setAdminState(CF::Device::LOCKED);
+                LOG_DEBUG(RFNoC_ProgrammableDevice_i, "After setAdminState");
             }
         }
 
