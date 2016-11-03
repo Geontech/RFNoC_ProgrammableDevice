@@ -785,6 +785,14 @@ void RFNoC_ProgrammableDevice_i::deviceEnable(frontend_tuner_status_struct_struc
     ************************************************************/
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
+    std::pair<uhd::rfnoc::radio_ctrl::sptr, size_t> radio = this->tunerIDToRadio[tuner_id];
+
+    if (fts.tuner_type == "RX_DIGITIZER") {
+        radio.first->set_rx_streamer(true, radio.second);
+    } else if (fts.tuner_type == "TX") {
+        radio.first->set_tx_streamer(true, radio.second);
+    }
+
     fts.enabled = true;
     return;
 }
@@ -798,6 +806,14 @@ void RFNoC_ProgrammableDevice_i::deviceDisable(frontend_tuner_status_struct_stru
     disabled
     ************************************************************/
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    std::pair<uhd::rfnoc::radio_ctrl::sptr, size_t> radio = this->tunerIDToRadio[tuner_id];
+
+    if (fts.tuner_type == "RX_DIGITIZER") {
+        radio.first->set_rx_streamer(false, radio.second);
+    } else if (fts.tuner_type == "TX") {
+        radio.first->set_tx_streamer(false, radio.second);
+    }
 
     fts.enabled = false;
     return;
