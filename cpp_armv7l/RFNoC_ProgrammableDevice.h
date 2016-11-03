@@ -90,14 +90,16 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         virtual bool listenerRequestValidation(frontend_tuner_allocation_struct &request, size_t tuner_id);
 
     private:
-        std::map<std::string, std::pair<uhd::rfnoc::radio_ctrl::sptr, size_t> > allocationIDToRadio;
+        std::map<std::string, std::pair<uhd::rfnoc::ddc_block_ctrl::sptr, size_t> > allocationIDToDDC;
+        std::map<std::string, std::pair<uhd::rfnoc::duc_block_ctrl::sptr, size_t> > allocationIDToDUC;
         std::vector<uhd::rfnoc::ddc_block_ctrl::sptr> ddcs;
         std::vector<uhd::rfnoc::duc_block_ctrl::sptr> ducs;
         const std::string HARDWARE_ID;
         const std::string IDLE_BITFILE_PATH;
         std::map<std::string, std::string> listeners;
         uhd::rfnoc::graph::sptr radioChainGraph;
-        std::vector<std::string> radioIDs;
+        std::map<std::string, std::pair<uhd::rfnoc::ddc_block_ctrl::sptr, size_t> > radioIDToDDC;
+        std::map<std::string, std::pair<uhd::rfnoc::duc_block_ctrl::sptr, size_t> > radioIDToDUC;
         std::vector<uhd::rfnoc::radio_ctrl::sptr> radios;
         std::vector<frontend_tuner_status_struct_struct *> rxStatuses;
         std::map<size_t, std::pair<uhd::rfnoc::radio_ctrl::sptr, size_t> > tunerIDToRadio;

@@ -406,20 +406,20 @@ bool RFNoC_ProgrammableDevice_i::connectRadioRX(const CORBA::ULong &portHash, co
         LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Checking hash " << providesHash);
 
         if (providesHash == portHash) {
-            LOG_INFO(RFNoC_ProgrammableDevice_i, "Found correct connection, retrieving radio information");
+            LOG_INFO(RFNoC_ProgrammableDevice_i, "Found correct connection, retrieving DDC information");
             std::string connectionID = connections[i].second;
 
-            std::map<std::string, std::pair<uhd::rfnoc::radio_ctrl::sptr, size_t> >::iterator it = this->allocationIDToRadio.find(connectionID);
+            std::map<std::string, std::pair<uhd::rfnoc::ddc_block_ctrl::sptr, size_t> >::iterator it = this->allocationIDToDDC.find(connectionID);
 
-            if (it == this->allocationIDToRadio.end()) {
-                LOG_WARN(RFNoC_ProgrammableDevice_i, "Unable to find radio for allocation/connection ID: " << connectionID);
+            if (it == this->allocationIDToDDC.end()) {
+                LOG_WARN(RFNoC_ProgrammableDevice_i, "Unable to find DDC for allocation/connection ID: " << connectionID);
                 continue;
             }
 
-            uhd::rfnoc::radio_ctrl::sptr radio = it->second.first;
-            size_t radioPort = it->second.second;
+            uhd::rfnoc::ddc_block_ctrl::sptr ddc = it->second.first;
+            size_t ddcPort = it->second.second;
 
-            this->radioChainGraph->connect(radio->get_block_id(), radioPort, blockToConnect, blockPort);
+            this->radioChainGraph->connect(ddc->get_block_id(), ddcPort, blockToConnect, blockPort);
 
             return true;
         }
@@ -439,17 +439,17 @@ bool RFNoC_ProgrammableDevice_i::connectRadioTX(const std::string &allocationID,
         return false;
     }
 
-    std::map<std::string, std::pair<uhd::rfnoc::radio_ctrl::sptr, size_t> >::iterator it = this->allocationIDToRadio.find(allocationID);
+    std::map<std::string, std::pair<uhd::rfnoc::duc_block_ctrl::sptr, size_t> >::iterator it = this->allocationIDToDUC.find(allocationID);
 
-    if (it == this->allocationIDToRadio.end()) {
-        LOG_WARN(RFNoC_ProgrammableDevice_i, "Attempted to connect to radio with unknown allocation ID: " << allocationID);
+    if (it == this->allocationIDToDUC.end()) {
+        LOG_WARN(RFNoC_ProgrammableDevice_i, "Attempted to connect to DUC with unknown allocation ID: " << allocationID);
         return false;
     }
 
-    uhd::rfnoc::radio_ctrl::sptr radio = it->second.first;
-    size_t radioPort = it->second.second;
+    uhd::rfnoc::duc_block_ctrl::sptr duc = it->second.first;
+    size_t ducPort = it->second.second;
 
-    this->radioChainGraph->connect(blockToConnect, blockPort, radio->get_block_id(), radioPort);
+    this->radioChainGraph->connect(blockToConnect, blockPort, duc->get_block_id(), ducPort);
 
     return true;
 }
@@ -558,8 +558,13 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
     // Clear the graph
     this->radioChainGraph.reset();
 
-    // Clear the map of allocation IDs to radios
-    this->allocationIDToRadio.clear();
+    // Clear the map of allocation IDs to DDCs/DUCs
+    this->allocationIDToDDC.clear();
+    this->allocationIDToDUC.clear();
+
+    // Clear the map of radio IDs to DDCs/DUCs
+    this->radioIDToDDC.clear();
+    this->radioIDToDUC.clear();
 
     // Clear the map of tuner IDs to radios
     this->tunerIDToRadio.clear();
@@ -674,6 +679,8 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
             LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Connecting port " << portNumber << " between " << radioBlockID.to_string() << " and " << ddcBlockID.to_string());
 
             this->radioChainGraph->connect(radioBlockID, portNumber, ddcBlockID, portNumber);
+
+            this->radioIDToDDC[radioBlockID.to_string()] = std::make_pair(this->ddcs[i], j);
         }
     }
 
@@ -692,6 +699,8 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
             LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Connecting port " << portNumber << " between " << ducBlockID.to_string() << " and " << radioBlockID.to_string());
 
             this->radioChainGraph->connect(ducBlockID, portNumber, radioBlockID, portNumber);
+
+            this->radioIDToDUC[radioBlockID.to_string()] = std::make_pair(this->ducs[i], j);
         }
     }
 
@@ -886,8 +895,16 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
     fts.center_frequency = actualCF;
     fts.sample_rate = 16e6;
 
-    // Map the allocation ID to the radio
-    this->allocationIDToRadio[request.allocation_id] = it->second;
+    // Map the allocation ID to the DDC or DUC
+    if (request.tuner_type == "RX_DIGITIZER") {
+        std::pair<uhd::rfnoc::ddc_block_ctrl::sptr, size_t> ddc = this->radioIDToDDC[radio->get_block_id().to_string()];
+
+        this->allocationIDToDDC[request.allocation_id] = ddc;
+    } else if (request.tuner_type == "TX") {
+        std::pair<uhd::rfnoc::duc_block_ctrl::sptr, size_t> duc = this->radioIDToDUC[radio->get_block_id().to_string()];
+
+        this->allocationIDToDUC[request.allocation_id] = duc;
+    }
 
     // Mark this radio as used
     this->tunerIDUsed[tuner_id];
@@ -913,10 +930,16 @@ bool RFNoC_ProgrammableDevice_i::deviceDeleteTuning(
 
     const std::string allocationId = getControlAllocationId(tuner_id);
 
-    std::map<std::string, std::pair<uhd::rfnoc::radio_ctrl::sptr, size_t> >::iterator it2 = this->allocationIDToRadio.find(allocationId);
+    std::map<std::string, std::pair<uhd::rfnoc::ddc_block_ctrl::sptr, size_t> >::iterator ddcIt = this->allocationIDToDDC.find(allocationId);
 
-    if (it2 != this->allocationIDToRadio.end()) {
-        this->allocationIDToRadio.erase(it2);
+    if (ddcIt != this->allocationIDToDDC.end()) {
+        this->allocationIDToDDC.erase(ddcIt);
+    }
+
+    std::map<std::string, std::pair<uhd::rfnoc::duc_block_ctrl::sptr, size_t> >::iterator ducIt = this->allocationIDToDUC.find(allocationId);
+
+    if (ducIt != this->allocationIDToDUC.end()) {
+        this->allocationIDToDUC.erase(ducIt);
     }
 
     this->tunerIDUsed[tuner_id] = false;
