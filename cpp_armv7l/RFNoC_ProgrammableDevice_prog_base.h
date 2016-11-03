@@ -692,6 +692,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
         {
             LOG_TRACE(RFNoC_ProgrammableDevice_prog_base, __PRETTY_FUNCTION__);
             if (hasAnInactiveHwLoadStatus()) {
+                LOG_DEBUG(RFNoC_ProgrammableDevice_prog_base, "Device has inactive HW load status");
                 // Unlock all devices if there is capacity for more loads
                 PersonaMapIter iter;
                 for (iter = _personaMap.begin(); iter != _personaMap.end(); iter++) {
@@ -699,6 +700,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
                 }
                 setAdminState(CF::Device::UNLOCKED);
             } else {
+                LOG_DEBUG(RFNoC_ProgrammableDevice_prog_base, "Device does not have inactive HW load status");
                 // Lock all personas that are not loaded onto the device
                 
                 // Grab the current hw_load_status struct
