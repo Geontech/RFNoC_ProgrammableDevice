@@ -678,6 +678,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
 
         virtual bool hasAnInactiveHwLoadStatus() 
         {
+            LOG_TRACE(RFNoC_ProgrammableDevice_prog_base, __PRETTY_FUNCTION__);
             HwLoadStatusVec* statusVecPtr = getHwLoadStatuses();
             if (statusVecPtr == NULL) {
                 LOG_ERROR(RFNoC_ProgrammableDevice_prog_base, __FUNCTION__ <<
@@ -689,6 +690,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
 
         virtual void updateAdminStates()
         {
+            LOG_TRACE(RFNoC_ProgrammableDevice_prog_base, __PRETTY_FUNCTION__);
             if (hasAnInactiveHwLoadStatus()) {
                 // Unlock all devices if there is capacity for more loads
                 PersonaMapIter iter;
@@ -739,6 +741,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
 
         int findAvailableHwLoadStatusIndex(const HwLoadStatusVec& loadStatusVec)
         {
+            LOG_TRACE(RFNoC_ProgrammableDevice_prog_base, __PRETTY_FUNCTION__);
             // Initialize local variables
             int returnVal = -1;
 
