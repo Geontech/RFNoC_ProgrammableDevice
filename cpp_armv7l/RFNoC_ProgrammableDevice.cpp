@@ -966,8 +966,18 @@ bool RFNoC_ProgrammableDevice_i::deviceDeleteTuning(
         return false;
     }
 
+    // No need to clean up if the tuner was not in use
+    if (not it->second) {
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Device with tuner ID: " << tuner_id << " was not in use");
+        return false;
+    }
+
+    // Get the control allocation ID
     const std::string allocationId = getControlAllocationId(tuner_id);
 
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Found allocation ID for tuner: " << allocationId);
+
+    // Clear the allocation ID to DDC/DUC mapping
     std::map<std::string, std::pair<uhd::rfnoc::ddc_block_ctrl::sptr, size_t> >::iterator ddcIt = this->allocationIDToDDC.find(allocationId);
 
     if (ddcIt != this->allocationIDToDDC.end()) {
@@ -980,13 +990,15 @@ bool RFNoC_ProgrammableDevice_i::deviceDeleteTuning(
         this->allocationIDToDUC.erase(ducIt);
     }
 
+    // Clear the tuner in use flag
     this->tunerIDUsed[tuner_id] = false;
 
     return true;
 }
 
-std::string RFNoC_ProgrammableDevice_i::createAllocationIdCsv(size_t tuner_id){
-    //LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
+std::string RFNoC_ProgrammableDevice_i::createAllocationIdCsv(size_t tuner_id)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
     std::string alloc_id_csv = "";
     // ensure control allocation_id is first in list
     if (!tuner_allocation_ids[tuner_id].control_allocation_id.empty())
@@ -999,16 +1011,19 @@ std::string RFNoC_ProgrammableDevice_i::createAllocationIdCsv(size_t tuner_id){
     return alloc_id_csv;
 }
 
-std::string RFNoC_ProgrammableDevice_i::getControlAllocationId(size_t tuner_id){
+std::string RFNoC_ProgrammableDevice_i::getControlAllocationId(size_t tuner_id)
+{
     return tuner_allocation_ids[tuner_id].control_allocation_id;
 }
 
-std::vector<std::string> RFNoC_ProgrammableDevice_i::getListenerAllocationIds(size_t tuner_id){
+std::vector<std::string> RFNoC_ProgrammableDevice_i::getListenerAllocationIds(size_t tuner_id)
+{
     return tuner_allocation_ids[tuner_id].listener_allocation_ids;
 }
 
-bool RFNoC_ProgrammableDevice_i::enableTuner(size_t tuner_id, bool enable) {
-    //LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
+bool RFNoC_ProgrammableDevice_i::enableTuner(size_t tuner_id, bool enable)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
 
     bool prev_enabled = frontend_tuner_status[tuner_id].enabled;
 
@@ -1026,7 +1041,8 @@ bool RFNoC_ProgrammableDevice_i::enableTuner(size_t tuner_id, bool enable) {
     return true;
 }
 
-bool RFNoC_ProgrammableDevice_i::listenerRequestValidation(frontend_tuner_allocation_struct &request, size_t tuner_id){
+bool RFNoC_ProgrammableDevice_i::listenerRequestValidation(frontend_tuner_allocation_struct &request, size_t tuner_id)
+{
     LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
 
     // ensure requested values are non-negative
@@ -1072,8 +1088,9 @@ bool RFNoC_ProgrammableDevice_i::listenerRequestValidation(frontend_tuner_alloca
 //        MAPPING         //
 ////////////////////////////
 
-long RFNoC_ProgrammableDevice_i::getTunerMapping(std::string allocation_id) {
-    //LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
+long RFNoC_ProgrammableDevice_i::getTunerMapping(std::string allocation_id)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
     long NO_VALID_TUNER = -1;
 
     string_number_mapping::iterator iter = allocation_id_to_tuner_id.find(allocation_id);
@@ -1083,7 +1100,8 @@ long RFNoC_ProgrammableDevice_i::getTunerMapping(std::string allocation_id) {
     return NO_VALID_TUNER;
 }
 
-bool RFNoC_ProgrammableDevice_i::removeTunerMapping(size_t tuner_id, std::string allocation_id) {
+bool RFNoC_ProgrammableDevice_i::removeTunerMapping(size_t tuner_id, std::string allocation_id)
+{
     LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
     removeListener(allocation_id);
     std::vector<std::string>::iterator it = tuner_allocation_ids[tuner_id].listener_allocation_ids.begin();
@@ -1100,7 +1118,8 @@ bool RFNoC_ProgrammableDevice_i::removeTunerMapping(size_t tuner_id, std::string
     return false;
 }
 
-bool RFNoC_ProgrammableDevice_i::removeTunerMapping(size_t tuner_id) {
+bool RFNoC_ProgrammableDevice_i::removeTunerMapping(size_t tuner_id)
+{
     LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
     deviceDeleteTuning(frontend_tuner_status[tuner_id], tuner_id);
     removeAllocationIdRouting(tuner_id);
@@ -1131,13 +1150,17 @@ bool RFNoC_ProgrammableDevice_i::removeTunerMapping(size_t tuner_id) {
     return cnt > 0;
 }
 
-void RFNoC_ProgrammableDevice_i::assignListener(const std::string& listen_alloc_id, const std::string& alloc_id) {
-};
+void RFNoC_ProgrammableDevice_i::assignListener(const std::string& listen_alloc_id, const std::string& alloc_id)
+{
+}
 
-void RFNoC_ProgrammableDevice_i::removeListener(const std::string& listen_alloc_id) {
-};
+void RFNoC_ProgrammableDevice_i::removeListener(const std::string& listen_alloc_id)
+{
+}
 
-void RFNoC_ProgrammableDevice_i::removeAllocationIdRouting(const size_t tuner_id) {
+void RFNoC_ProgrammableDevice_i::removeAllocationIdRouting(const size_t tuner_id)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
     std::string allocation_id = getControlAllocationId(tuner_id);
     std::vector<connection_descriptor_struct> old_table = this->connectionTable;
     std::vector<connection_descriptor_struct>::iterator itr = this->connectionTable.begin();
