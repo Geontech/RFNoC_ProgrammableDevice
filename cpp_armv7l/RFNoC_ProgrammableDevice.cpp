@@ -680,12 +680,17 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
 
             this->radioChainGraph->connect(radioBlockID, portNumber, ddcBlockID, portNumber);
 
-            this->radioIDToDDC[radioBlockID.to_string()] = std::make_pair(this->ddcs[i], j);
+            std::stringstream modifiedRadioID;
+
+            modifiedRadioID << this->radios[i]->get_block_id().to_string();
+            modifiedRadioID << j;
+
+            this->radioIDToDDC[modifiedRadioID.str()] = std::make_pair(this->ddcs[i], j);
         }
     }
 
-    // Iterate over the valid RX chains, gathering the number of channels and
-    // connecting the radio blocks to the DDC blocks
+    // Iterate over the valid TX chains, gathering the number of channels and
+    // connecting the radio blocks to the DUC blocks
     for (size_t i = 0; i < validTXChains; ++i) {
         uhd::rfnoc::block_id_t ducBlockID = this->ducs[i]->get_block_id();
         std::vector<size_t> inputPorts = this->radios[i]->get_input_ports();
@@ -700,7 +705,12 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
 
             this->radioChainGraph->connect(ducBlockID, portNumber, radioBlockID, portNumber);
 
-            this->radioIDToDUC[radioBlockID.to_string()] = std::make_pair(this->ducs[i], j);
+            std::stringstream modifiedRadioID;
+
+            modifiedRadioID << this->radios[i]->get_block_id().to_string();
+            modifiedRadioID << j;
+
+            this->radioIDToDUC[modifiedRadioID.str()] = std::make_pair(this->ducs[i], j);
         }
     }
 
@@ -913,11 +923,21 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
 
     // Map the allocation ID to the DDC or DUC
     if (request.tuner_type == "RX_DIGITIZER") {
-        std::pair<uhd::rfnoc::ddc_block_ctrl::sptr, size_t> ddc = this->radioIDToDDC[radio->get_block_id().to_string()];
+        std::stringstream modifiedRadioID;
+
+        modifiedRadioID << radio->get_block_id().to_string();
+        modifiedRadioID << channel;
+
+        std::pair<uhd::rfnoc::ddc_block_ctrl::sptr, size_t> ddc = this->radioIDToDDC[modifiedRadioID.str()];
 
         this->allocationIDToDDC[request.allocation_id] = ddc;
     } else if (request.tuner_type == "TX") {
-        std::pair<uhd::rfnoc::duc_block_ctrl::sptr, size_t> duc = this->radioIDToDUC[radio->get_block_id().to_string()];
+        std::stringstream modifiedRadioID;
+
+        modifiedRadioID << radio->get_block_id().to_string();
+        modifiedRadioID << channel;
+
+        std::pair<uhd::rfnoc::duc_block_ctrl::sptr, size_t> duc = this->radioIDToDUC[modifiedRadioID.str()];
 
         this->allocationIDToDUC[request.allocation_id] = duc;
     }
@@ -925,7 +945,7 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
     // Mark this radio as used
     this->tunerIDUsed[tuner_id];
 
-    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Allocation succeeded on: " << radio->get_block_id().to_string() << "/" << channel);
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Allocation succeeded on: " << radio->get_block_id().to_string() << ":" << channel);
 
     return true;
 }
