@@ -925,6 +925,8 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
     // Mark this radio as used
     this->tunerIDUsed[tuner_id];
 
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Allocation succeeded on: " << radio->get_block_id().to_string() << "/" << channel);
+
     return true;
 }
 
