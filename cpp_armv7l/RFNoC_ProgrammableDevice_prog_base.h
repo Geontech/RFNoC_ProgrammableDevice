@@ -117,6 +117,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
         : 
             RFNoC_ProgrammableDevice_base(devMgr_ior, id, lbl, sftwrPrfl)
         {
+            LOG_TRACE(RFNoC_ProgrammableDevice_prog_base, __PRETTY_FUNCTION__);
             construct();
         }
 
@@ -129,6 +130,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
         :
             RFNoC_ProgrammableDevice_base(devMgr_ior, id, lbl, sftwrPrfl, compDev)
         {
+            LOG_TRACE(RFNoC_ProgrammableDevice_prog_base, __PRETTY_FUNCTION__);
             construct();
         }
 
@@ -141,6 +143,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
         :
             RFNoC_ProgrammableDevice_base(devMgr_ior, id, lbl, sftwrPrfl, capacities)
         {
+            LOG_TRACE(RFNoC_ProgrammableDevice_prog_base, __PRETTY_FUNCTION__);
             construct();
         }
 
@@ -154,10 +157,12 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
         :
             RFNoC_ProgrammableDevice_base(devMgr_ior, id, lbl, sftwrPrfl, capacities, compDev)
         {
+            LOG_TRACE(RFNoC_ProgrammableDevice_prog_base, __PRETTY_FUNCTION__);
             construct();
         }
         
         virtual ~RFNoC_ProgrammableDevice_prog_base() {
+            LOG_TRACE(RFNoC_ProgrammableDevice_prog_base, __PRETTY_FUNCTION__);
             // Clean up all children that were executed
             PersonaMapIter personaIter;
             for (personaIter = _personaMap.begin(); personaIter != _personaMap.end(); personaIter++) {
@@ -166,6 +171,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
         }
 
         void construct() {
+            LOG_TRACE(RFNoC_ProgrammableDevice_prog_base, __PRETTY_FUNCTION__);
             setUsageState(CF::Device::BUSY);
             _personaMap.clear();
             _processMap.clear();
@@ -189,6 +195,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
                 CF::Device::InvalidState, 
                 CORBA::SystemException ) 
         {
+            LOG_TRACE(RFNoC_ProgrammableDevice_prog_base, __PRETTY_FUNCTION__);
             bool isSharedLibrary = (loadKind == CF::LoadableDevice::SHARED_LIBRARY);
             bool existsOnDevFS   = _deviceManager->fileSys()->exists(fileName);
             
@@ -250,6 +257,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
                 CF::ExecutableDevice::InvalidProcess, 
                 CORBA::SystemException ) 
         {
+            LOG_TRACE(RFNoC_ProgrammableDevice_prog_base, __PRETTY_FUNCTION__);
             // Initialize local variables
             ProcessMapIter processIter;
             PersonaMapIter personaIter;
@@ -281,6 +289,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
                 CF::Device::InsufficientCapacity, 
                 CORBA::SystemException ) 
         {
+            LOG_TRACE(RFNoC_ProgrammableDevice_prog_base, __PRETTY_FUNCTION__);
             boost::mutex::scoped_lock lock(_allocationMutex);
 
             // Initialize local variables
@@ -361,6 +370,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
                 CF::Device::InvalidCapacity, 
                 CORBA::SystemException ) 
         {
+            LOG_TRACE(RFNoC_ProgrammableDevice_prog_base, __PRETTY_FUNCTION__);
             // Initialize local variables
             bool deallocationSuccess = false;
             std::string id;
@@ -425,6 +435,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
             throw ( CF::LifeCycle::ReleaseError, 
                     CORBA::SystemException)
         {
+            LOG_TRACE(RFNoC_ProgrammableDevice_prog_base, __PRETTY_FUNCTION__);
             // Initialize local variables
             ProcessMapIter processIter;
             PersonaMapIter personaIter;
@@ -444,17 +455,20 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
             setAdminState(CF::Device::SHUTTING_DOWN);
         }
         
-        HwLoadRequestVec* getHwLoadRequests() { 
+        HwLoadRequestVec* getHwLoadRequests() {
+            LOG_TRACE(RFNoC_ProgrammableDevice_prog_base, __PRETTY_FUNCTION__);
             return getPropertyPtr(_hwLoadRequestsPtr, 
                                   &_defaultHwLoadRequests);
         };
         
         HwLoadStatusVec* getHwLoadStatuses() { 
+            LOG_TRACE(RFNoC_ProgrammableDevice_prog_base, __PRETTY_FUNCTION__);
             return getPropertyPtr(_hwLoadStatusesPtr, 
                                   &_defaultHwLoadStatuses);
         };
 
         void setHwLoadRequestsPtr(HwLoadRequestVec* propPtr) {
+            LOG_TRACE(RFNoC_ProgrammableDevice_prog_base, __PRETTY_FUNCTION__);
             if (propPtr == NULL) {
                LOG_ERROR(RFNoC_ProgrammableDevice_prog_base, "CANNOT SET HW_LOAD_REQUESTS_PTR: PROPERTY IS NULL");
                return;
@@ -463,6 +477,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
         }
         
         void setHwLoadStatusesPtr(HwLoadStatusVec* propPtr) {
+            LOG_TRACE(RFNoC_ProgrammableDevice_prog_base, __PRETTY_FUNCTION__);
             if (propPtr == NULL) {
                LOG_ERROR(RFNoC_ProgrammableDevice_prog_base, "CANNOT SET HW_LOAD_STATUSES_PTR: PROPERTY IS NULL");
                return;
