@@ -726,6 +726,8 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
                     return;
                 }
 
+                LOG_DEBUG(RFNoC_ProgrammableDevice_prog_base, "statusVecPtr was not NULL");
+
                 // Grab all of the Requester Ids to compare against
                 std::vector<std::string> allRequesterIds;
                 allRequesterIds.resize(statusVecPtr->size());
@@ -736,6 +738,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
                 // Any persona that has a load running should not be locked
                 PersonaMapIter iter;
                 for (iter = _personaMap.begin(); iter != _personaMap.end(); iter++) {
+                    LOG_DEBUG(RFNoC_ProgrammableDevice_prog_base, "Looking for persona name " << iter->first << " in allRequesterIds");
                     if (strVecContainsStr(allRequesterIds, iter->first)) {
                         continue; // Skip the running personas
                     }
