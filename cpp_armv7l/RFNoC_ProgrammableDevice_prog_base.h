@@ -413,7 +413,9 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
                 }
             }
 
+            LOG_DEBUG(RFNoC_ProgrammableDevice_prog_base, "Calling updateAdminStates");
             updateAdminStates();
+            LOG_DEBUG(RFNoC_ProgrammableDevice_prog_base, "Called updateAdminStates");
             /*if (deallocationSuccess == false) {
                 throw CF::Device::InvalidCapacity("Unable to deallocation capacities", capacities);
             }*/
