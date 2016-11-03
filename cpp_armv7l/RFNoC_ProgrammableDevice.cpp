@@ -384,7 +384,9 @@ void RFNoC_ProgrammableDevice_i::deallocateCapacity(const CF::Properties& capaci
     }
     _usageState = updateUsageState();
 
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Finished FEI deallocation, calling prog_base allocation");
     RFNoC_ProgrammableDevice_prog_base_type::deallocateCapacity(capacities);
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Finished prog_base deallocation");
 }
 
 bool RFNoC_ProgrammableDevice_i::connectRadioRX(const CORBA::ULong &portHash, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort)
