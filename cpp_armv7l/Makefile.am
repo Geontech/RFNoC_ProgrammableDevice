@@ -29,7 +29,7 @@ distclean-local:
 # you wish to manually control these options.
 include $(srcdir)/Makefile.am.ide
 RFNoC_ProgrammableDevice_SOURCES = $(redhawk_SOURCES_auto)
-RFNoC_ProgrammableDevice_LDADD = $(SOFTPKG_LIBS) $(PROJECTDEPS_LIBS) $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) $(BOOST_REGEX_LIB) $(BOOST_SYSTEM_LIB) $(INTERFACEDEPS_LIBS) $(LIBUHD_LIBS) $(redhawk_LDADD_auto) -ldl
+RFNoC_ProgrammableDevice_LDADD = $(SOFTPKG_LIBS) $(PROJECTDEPS_LIBS) $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) $(BOOST_REGEX_LIB) $(BOOST_SYSTEM_LIB) $(INTERFACEDEPS_LIBS) $(LIBUHD_LIBS) $(redhawk_LDADD_auto) -ldl -luuid
 RFNoC_ProgrammableDevice_CXXFLAGS = -Wall $(SOFTPKG_CFLAGS) $(PROJECTDEPS_CFLAGS) $(BOOST_CPPFLAGS) $(INTERFACEDEPS_CFLAGS) $(LIBUHD_CFLAGS) $(redhawk_INCLUDES_auto)
 RFNoC_ProgrammableDevice_LDFLAGS = -Wall $(redhawk_LDFLAGS_auto)
 
