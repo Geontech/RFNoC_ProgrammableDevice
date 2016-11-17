@@ -451,6 +451,9 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
             this->txStatuses.push_back(&fts);
         }
     }
+
+    this->updateSRI.clear();
+    this->updateSRI.resize(this->frontend_tuner_status.size(), false);
 }
 
 void RFNoC_ProgrammableDevice_i::target_deviceChanged(const target_device_struct &oldValue, const target_device_struct &newValue)
