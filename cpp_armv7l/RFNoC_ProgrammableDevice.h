@@ -62,6 +62,8 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
 
         CF::Device::UsageType updateUsageState();
 
+        void connectionTableChanged(const std::vector<connection_descriptor_struct> &oldValue, const std::vector<connection_descriptor_struct> &newValue);
+
         ///////////////////////////////
         // Device specific functions //
         ///////////////////////////////
@@ -81,13 +83,18 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         virtual bool removeTunerMapping(size_t tuner_id);
         virtual void assignListener(const std::string& listen_alloc_id, const std::string& alloc_id);
         virtual void removeListener(const std::string& listen_alloc_id);
-        virtual void removeAllocationIdRouting(const size_t tuner_id);
+        void matchAllocationIdToStreamId(const std::string allocation_id, const std::string stream_id, const std::string port_name="");
+        void removeAllocationIdRouting(const size_t tuner_id);
+        void removeStreamIdRouting(const std::string stream_id, const std::string allocation_id="");
         virtual void setNumChannels(size_t num);
         virtual void setNumChannels(size_t num, std::string tuner_type);
 
         // Configure tuner - gets called during allocation
         virtual bool enableTuner(size_t tuner_id, bool enable);
         virtual bool listenerRequestValidation(frontend_tuner_allocation_struct &request, size_t tuner_id);
+
+    private:
+        std::string getStreamId(size_t tuner_id);
 
     private:
         std::map<std::string, std::pair<uhd::rfnoc::ddc_block_ctrl::sptr, size_t> > allocationIDToDDC;
@@ -105,6 +112,7 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         std::map<size_t, std::pair<uhd::rfnoc::radio_ctrl::sptr, size_t> > tunerIDToRadio;
         std::map<size_t, bool> tunerIDUsed;
         std::vector<frontend_tuner_status_struct_struct *> txStatuses;
+        std::vector<bool> updateSRI;
         uhd::device3::sptr usrp;
         uhd::device_addr_t usrpAddress;
 };

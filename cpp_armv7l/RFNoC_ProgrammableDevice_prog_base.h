@@ -508,7 +508,8 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
                                     const CF::Properties&       parameters) 
         {
             // Open up the cached .so file
-            std::string absPath = get_current_dir_name();
+            char *absPathC = get_current_dir_name();
+            std::string absPath = absPathC;
             absPath.append(libraryName);
             void* pHandle = dlopen(absPath.c_str(), RTLD_NOW);
             if (!pHandle) {
@@ -574,6 +575,8 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
             for (unsigned int i = 0; i < argCounter; i++) {
                 free(argv[i]);
             }
+
+            free(absPathC);
 
             return personaPtr;
         }
