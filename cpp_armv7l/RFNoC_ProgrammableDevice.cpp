@@ -235,7 +235,7 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
     LOG_INFO(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
     // Reset the USRP device
-    if (this->usrp) {
+    if (this->usrp.get()) {
         this->usrp->clear();
     }
 
