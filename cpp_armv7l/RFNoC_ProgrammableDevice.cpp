@@ -278,6 +278,7 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
     setNumChannels(0);
     this->rxStatuses.clear();
     this->txStatuses.clear();
+    this->updateSRI.clear();
 }
 
 bool RFNoC_ProgrammableDevice_i::hwLoadRequestIsValid(const HwLoadRequestStruct& hwLoadRequestStruct)
