@@ -86,7 +86,7 @@ bool RFNoC_ProgrammableDevice_i::connectRadioRX(const CORBA::ULong &portHash, co
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
-    if (not this->radioChainGraph) {
+    if (not this->radioChainGraph.get()) {
         LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Unable to connect radio without graph");
         return false;
     }
@@ -129,7 +129,7 @@ bool RFNoC_ProgrammableDevice_i::connectRadioTX(const std::string &allocationID,
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
-    if (not this->radioChainGraph) {
+    if (not this->radioChainGraph.get()) {
         LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Unable to connect radio without graph");
         return false;
     }
@@ -276,8 +276,6 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
 
     // Clear the frontend_tuner_status and related lists
     setNumChannels(0);
-    this->rxStatuses.clear();
-    this->txStatuses.clear();
     this->updateSRI.clear();
 }
 
@@ -430,7 +428,6 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
             this->tunerIDUsed[currentStatus] = false;
 
             ++currentStatus;
-            this->rxStatuses.push_back(&fts);
         }
     }
 
@@ -449,7 +446,6 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
             this->tunerIDUsed[currentStatus] = false;
 
             ++currentStatus;
-            this->txStatuses.push_back(&fts);
         }
     }
 
