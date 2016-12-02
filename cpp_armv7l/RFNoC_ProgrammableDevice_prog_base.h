@@ -239,7 +239,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
             }
            
             // Grab the name from the instantiated object 
-            personaId = ossie::corba::returnString(persona->identifier());
+            personaId = persona->_identifier;
             
             // Save off the name-pid and name-object mappings
             _personaMap[personaId] = persona;
@@ -747,7 +747,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
                         continue; // Skip the running personas
                     }
                     LOG_DEBUG(RFNoC_ProgrammableDevice_prog_base, __FUNCTION__ <<
-                        ": Locking device '" << ossie::corba::returnString(iter->second->identifier()) << "'");
+                        ": Locking device '" << iter->second->_identifier << "'");
                     iter->second->adminState(CF::Device::LOCKED);
                 }
                 LOG_DEBUG(RFNoC_ProgrammableDevice_prog_base, "Before setAdminState");
