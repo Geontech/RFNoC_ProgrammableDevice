@@ -239,16 +239,6 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
         this->usrp->clear();
     }
 
-    // Load the idle bitfile
-    uhd::image_loader::image_loader_args_t image_loader_args;
-
-    image_loader_args.firmware_path = "";
-    image_loader_args.fpga_path = this->IDLE_BITFILE_PATH;
-    image_loader_args.load_firmware = false;
-    image_loader_args.load_fpga = true;
-
-    uhd::image_loader::load(image_loader_args);
-
     // Clear the USRP pointer
     this->usrp.reset();
 
@@ -277,6 +267,16 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
     // Clear the frontend_tuner_status and related lists
     setNumChannels(0);
     this->updateSRI.clear();
+
+    // Load the idle bitfile
+    uhd::image_loader::image_loader_args_t image_loader_args;
+
+    image_loader_args.firmware_path = "";
+    image_loader_args.fpga_path = this->IDLE_BITFILE_PATH;
+    image_loader_args.load_firmware = false;
+    image_loader_args.load_fpga = true;
+
+    uhd::image_loader::load(image_loader_args);
 }
 
 bool RFNoC_ProgrammableDevice_i::hwLoadRequestIsValid(const HwLoadRequestStruct& hwLoadRequestStruct)
