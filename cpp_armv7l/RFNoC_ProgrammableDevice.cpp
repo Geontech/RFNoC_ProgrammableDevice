@@ -73,8 +73,11 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
     boost::this_thread::sleep(boost::posix_time::seconds(3.0));
 
     // Set the usrp address
-    this->usrpAddress["name"] = this->target_device.name;
     this->usrpAddress["no_reload_fpga"] = true;
+
+    if (not this->target_device.name.empty()) {
+        this->usrpAddress["name"] = this->target_device.name;
+    }
 
     if (not this->target_device.serial.empty()) {
         this->usrpAddress["serial"] = this->target_device.serial;
