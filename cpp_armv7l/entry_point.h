@@ -25,9 +25,9 @@ typedef Device_impl* (*ConstructorPtr)(
         int,
         char*[],
         Device_impl* parentDevice,
-        hwLoadStatusCallback hwLoadStatusCb,
         connectRadioRXCallback connectRadioRXCb,
         connectRadioTXCallback connectRadioTXCb,
-        uhd::device3::sptr usrp);
+        getUsrpCallback getUsrpCb,
+        hwLoadStatusCallback hwLoadStatusCb);
 
 #endif // RFNOC_PROGRAMMABLEDEVICE_ENTRY_POINTS_H

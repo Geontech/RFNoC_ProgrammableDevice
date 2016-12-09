@@ -77,19 +77,6 @@ void RFNoC_ProgrammableDevice_i::constructor()
 
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Trying target_device: " << this->usrpAddress.to_pp_string());
 
-    // Attempt to get a reference to the specified device
-    try {
-        this->usrp = uhd::device3::make(this->usrpAddress);
-    } catch(uhd::key_error &e) {
-        LOG_ERROR(RFNoC_ProgrammableDevice_i, "Unable to find a suitable USRP Device 3.");
-        LOG_ERROR(RFNoC_ProgrammableDevice_i, e.what());
-        throw CF::LifeCycle::InitializeError();
-    } catch(std::exception &e) {
-        LOG_ERROR(RFNoC_ProgrammableDevice_i, "An error occurred attempting to get a reference to the USRP device.");
-        LOG_ERROR(RFNoC_ProgrammableDevice_i, e.what());
-        throw CF::LifeCycle::InitializeError();
-    }
-
     // Register the property change listeners
     this->addPropertyListener(this->connectionTable, this, &RFNoC_ProgrammableDevice_i::connectionTableChanged);
     this->addPropertyListener(this->target_device, this, &RFNoC_ProgrammableDevice_i::target_deviceChanged);
@@ -190,12 +177,13 @@ Device_impl* RFNoC_ProgrammableDevice_i::generatePersona(int argc, char* argv[],
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
-    hwLoadStatusCallback hwLoadStatusCb = boost::bind(&RFNoC_ProgrammableDevice_i::setHwLoadStatus, this, _1);
     connectRadioRXCallback connectionRadioRXCb = boost::bind(&RFNoC_ProgrammableDevice_i::connectRadioRX, this, _1, _2, _3);
     connectRadioTXCallback connectionRadioTXCb = boost::bind(&RFNoC_ProgrammableDevice_i::connectRadioTX, this, _1, _2, _3);
+    getUsrpCallback getUsrpCb = boost::bind(&RFNoC_ProgrammableDevice_i::getUsrp, this);
+    hwLoadStatusCallback hwLoadStatusCb = boost::bind(&RFNoC_ProgrammableDevice_i::setHwLoadStatus, this, _1);
 
     // Generate the Persona Device
-    Device_impl *persona = personaEntryPoint(argc, argv, this, hwLoadStatusCb, connectionRadioRXCb, connectionRadioTXCb, this->usrp);
+    Device_impl *persona = personaEntryPoint(argc, argv, this, connectionRadioRXCb, connectionRadioTXCb, getUsrpCb, hwLoadStatusCb);
 
     // Something went wrong
     if (not persona) {
@@ -224,6 +212,19 @@ bool RFNoC_ProgrammableDevice_i::loadHardware(HwLoadStatusStruct& requestStatus)
     // Allow some time for setup
     boost::this_thread::sleep(boost::posix_time::seconds(1.0));
 
+    // Attempt to get a reference to the specified device
+    try {
+        this->usrp = uhd::device3::make(this->usrpAddress);
+    } catch(uhd::key_error &e) {
+        LOG_ERROR(RFNoC_ProgrammableDevice_i, "Unable to find a suitable USRP Device 3.");
+        LOG_ERROR(RFNoC_ProgrammableDevice_i, e.what());
+        return false;
+    } catch(std::exception &e) {
+        LOG_ERROR(RFNoC_ProgrammableDevice_i, "An error occurred attempting to get a reference to the USRP device.");
+        LOG_ERROR(RFNoC_ProgrammableDevice_i, e.what());
+        return false;
+    }
+
     // Create the RF-NoC graph
     this->radioChainGraph = this->usrp->create_graph("radioChainGraph");
 
@@ -242,6 +243,9 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
     if (this->usrp.get()) {
         this->usrp->clear();
     }
+
+    // Clear the USRP
+    this->usrp.reset();
 
     // Clear the graph
     this->radioChainGraph.reset();
