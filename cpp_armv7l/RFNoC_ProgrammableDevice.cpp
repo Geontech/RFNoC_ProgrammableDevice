@@ -74,6 +74,18 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
 
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Trying target_device: " << this->usrpAddress.to_string());
 
+    // Attempt to get a reference to the specified device
+    try {
+        this->usrp = uhd::device3::make(this->usrpAddress);
+    } catch(uhd::key_error &e) {
+        LOG_ERROR(RFNoC_ProgrammableDevice_i, "Unable to find a suitable USRP Device 3.");
+        LOG_ERROR(RFNoC_ProgrammableDevice_i, e.what());
+        throw CF::LifeCycle::InitializeError();
+    } catch(...) {
+        LOG_ERROR(RFNoC_ProgrammableDevice_i, "An error occurred attempting to get a reference to the USRP device.");
+        throw CF::LifeCycle::InitializeError();
+    }
+
     // Register the property change listeners
     this->addPropertyListener(this->connectionTable, this, &RFNoC_ProgrammableDevice_i::connectionTableChanged);
     this->addPropertyListener(this->target_device, this, &RFNoC_ProgrammableDevice_i::target_deviceChanged);
@@ -208,18 +220,6 @@ bool RFNoC_ProgrammableDevice_i::loadHardware(HwLoadStatusStruct& requestStatus)
     // Allow some time for setup
     boost::this_thread::sleep(boost::posix_time::seconds(1.0));
 
-    // Attempt to get a reference to the specified device
-    try {
-        this->usrp = uhd::device3::make(this->usrpAddress);
-    } catch(uhd::key_error &e) {
-        LOG_ERROR(RFNoC_ProgrammableDevice_i, "Unable to find a suitable USRP Device 3.");
-        LOG_ERROR(RFNoC_ProgrammableDevice_i, e.what());
-        return false;
-    } catch(...) {
-        LOG_ERROR(RFNoC_ProgrammableDevice_i, "An error occurred attempting to get a reference to the USRP device.");
-        return false;
-    }
-
     // Create the RF-NoC graph
     this->radioChainGraph = this->usrp->create_graph("radioChainGraph");
 
@@ -238,9 +238,6 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
     if (this->usrp.get()) {
         this->usrp->clear();
     }
-
-    // Clear the USRP pointer
-    this->usrp.reset();
 
     // Clear the graph
     this->radioChainGraph.reset();
