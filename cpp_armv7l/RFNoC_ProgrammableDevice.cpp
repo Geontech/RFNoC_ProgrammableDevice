@@ -70,7 +70,7 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
 
     uhd::image_loader::load(image_loader_args);
 
-    boost::this_thread::sleep(boost::posix_time::seconds(1.0));
+    boost::this_thread::sleep(boost::posix_time::seconds(3.0));
 
     // Set the usrp address
     this->usrpAddress["name"] = this->target_device.name;
@@ -84,7 +84,7 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
         this->usrpAddress["type"] = this->target_device.type;
     }
 
-    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Trying target_device: " << this->usrpAddress.to_string());
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Trying target_device: " << this->usrpAddress.to_pp_string());
 
     // Attempt to get a reference to the specified device
     try {
