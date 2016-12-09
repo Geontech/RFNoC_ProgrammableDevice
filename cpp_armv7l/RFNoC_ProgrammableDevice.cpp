@@ -96,8 +96,9 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
         LOG_ERROR(RFNoC_ProgrammableDevice_i, "Unable to find a suitable USRP Device 3.");
         LOG_ERROR(RFNoC_ProgrammableDevice_i, e.what());
         throw CF::LifeCycle::InitializeError();
-    } catch(...) {
+    } catch(std::exception &e) {
         LOG_ERROR(RFNoC_ProgrammableDevice_i, "An error occurred attempting to get a reference to the USRP device.");
+        LOG_ERROR(RFNoC_ProgrammableDevice_i, e.what());
         throw CF::LifeCycle::InitializeError();
     }
 
