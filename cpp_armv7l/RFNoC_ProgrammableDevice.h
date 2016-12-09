@@ -27,7 +27,8 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl, CF::Properties capacities, char *compDev);
         ~RFNoC_ProgrammableDevice_i();
         int serviceFunction();
-        void initialize() throw (CF::LifeCycle::InitializeError, CORBA::SystemException);
+
+        void constructor();
 
         CORBA::Boolean allocateCapacity(const CF::Properties& capacities) throw (CF::Device::InvalidState, CF::Device::InvalidCapacity, CF::Device::InsufficientCapacity, CORBA::SystemException);
         void deallocateCapacity(const CF::Properties& capacities) throw (CF::Device::InvalidState, CF::Device::InvalidCapacity, CORBA::SystemException);

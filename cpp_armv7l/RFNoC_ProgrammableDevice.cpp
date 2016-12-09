@@ -52,7 +52,7 @@ RFNoC_ProgrammableDevice_i::~RFNoC_ProgrammableDevice_i()
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 }
 
-void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeError, CORBA::SystemException) 
+void RFNoC_ProgrammableDevice_i::constructor()
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
