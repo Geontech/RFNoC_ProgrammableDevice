@@ -179,7 +179,7 @@ Device_impl* RFNoC_ProgrammableDevice_i::generatePersona(int argc, char* argv[],
     connectRadioTXCallback connectionRadioTXCb = boost::bind(&RFNoC_ProgrammableDevice_i::connectRadioTX, this, _1, _2, _3);
 
     // Generate the Persona Device
-    Device_impl *persona = personaEntryPoint(argc, argv, this, hwLoadStatusCb, connectionRadioRXCb, connectionRadioTXCb, this->usrpAddress);
+    Device_impl *persona = personaEntryPoint(argc, argv, this, hwLoadStatusCb, connectionRadioRXCb, connectionRadioTXCb, this->usrp);
 
     // Something went wrong
     if (not persona) {

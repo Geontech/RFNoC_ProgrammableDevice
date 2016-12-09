@@ -1,7 +1,7 @@
 #ifndef RFNOC_PROGRAMMABLEDEVICE_ENTRY_POINTS_H
 #define RFNOC_PROGRAMMABLEDEVICE_ENTRY_POINTS_H
 
-#include <uhd/types/device_addr.hpp>
+#include <uhd/device3.hpp>
 #include "RFNoC_Persona.h"
 
 // ************* AGREED UPON METHOD TO INSTANTIATE DEVICE FROM SHARED OBJECT *************
@@ -28,6 +28,6 @@ typedef Device_impl* (*ConstructorPtr)(
         hwLoadStatusCallback hwLoadStatusCb,
         connectRadioRXCallback connectRadioRXCb,
         connectRadioTXCallback connectRadioTXCb,
-        uhd::device_addr_t usrpAddress);
+        uhd::device3::sptr usrp);
 
 #endif // RFNOC_PROGRAMMABLEDEVICE_ENTRY_POINTS_H
