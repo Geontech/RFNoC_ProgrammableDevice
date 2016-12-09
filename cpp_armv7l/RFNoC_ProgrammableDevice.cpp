@@ -60,18 +60,6 @@ void RFNoC_ProgrammableDevice_i::initialize() throw (CF::LifeCycle::InitializeEr
     setHwLoadRequestsPtr(&hw_load_requests);
     setHwLoadStatusesPtr(&hw_load_statuses);
 
-    // Load the idle bitfile
-    uhd::image_loader::image_loader_args_t image_loader_args;
-
-    image_loader_args.firmware_path = "";
-    image_loader_args.fpga_path = this->IDLE_BITFILE_PATH;
-    image_loader_args.load_firmware = false;
-    image_loader_args.load_fpga = true;
-
-    uhd::image_loader::load(image_loader_args);
-
-    boost::this_thread::sleep(boost::posix_time::seconds(3.0));
-
     // Set the usrp address
     this->usrpAddress["no_reload_fpga"] = true;
 
