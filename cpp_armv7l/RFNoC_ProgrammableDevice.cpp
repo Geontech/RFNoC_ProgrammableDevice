@@ -237,7 +237,7 @@ bool RFNoC_ProgrammableDevice_i::loadHardware(HwLoadStatusStruct& requestStatus)
         boost::system::error_code ec;
         boost::filesystem::create_symlink(requestStatus.load_filepath, this->DEFAULT_BITFILE_PATH, ec);
 
-        if (ec.error_code() != boost::system::errc::success) {
+        if (ec != boost::system::errc::success) {
             LOG_ERROR(RFNoC_ProgrammableDevice_i, "A problem occurred while linking the requested bitfile path");
             return false;
         }
