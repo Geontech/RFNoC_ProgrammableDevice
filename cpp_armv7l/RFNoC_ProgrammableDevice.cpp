@@ -169,7 +169,11 @@ void RFNoC_ProgrammableDevice_i::releaseObject() throw (CF::LifeCycle::ReleaseEr
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Checking device to HW status map for ACTIVE or PENDING statuses");
+
     for (deviceHwStatusMap::iterator it = this->deviceIDToHwStatus.begin(); it != this->deviceIDToHwStatus.end(); ++it) {
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Checking status with load filepath: " << it->second.load_filepath);
+
         if (it->second.state == HW_LOAD::ACTIVE or it->second.state == HW_LOAD::PENDING) {
             unloadHardware(it->second);
         }
