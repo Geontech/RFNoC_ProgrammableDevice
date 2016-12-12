@@ -165,6 +165,19 @@ void RFNoC_ProgrammableDevice_i::terminate (CF::ExecutableDevice::ProcessID_Type
     RFNoC_ProgrammableDevice_prog_base_type::terminate(processId);
 }
 
+void RFNoC_ProgrammableDevice_i::releaseObject() throw (CF::LifeCycle::ReleaseError, CORBA::SystemException)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    for (deviceHwStatusMap::iterator it = this->deviceIDToHwStatus.begin(); it != this->deviceIDToHwStatus.end(); ++it) {
+        if (it->second.state == HW_LOAD::ACTIVE or it->second.state == HW_LOAD::PENDING) {
+            unloadHardware(it->second);
+        }
+    }
+
+    RFNoC_ProgrammableDevice_prog_base_type::releaseObject();
+}
+
 bool RFNoC_ProgrammableDevice_i::connectRadioRX(const CORBA::ULong &portHash, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort)
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);

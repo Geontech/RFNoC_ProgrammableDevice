@@ -40,6 +40,8 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         virtual void terminate (CF::ExecutableDevice::ProcessID_Type processId)
             throw ( CF::Device::InvalidState, CF::ExecutableDevice::InvalidProcess, CORBA::SystemException);
 
+        void releaseObject() throw (CF::LifeCycle::ReleaseError, CORBA::SystemException);
+
         bool connectRadioRX(const CORBA::ULong &portHash, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort);
         bool connectRadioTX(const std::string &allocationID, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort);
         uhd::device3::sptr getUsrp() { return this->usrp; }
