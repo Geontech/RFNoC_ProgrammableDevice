@@ -9,7 +9,10 @@ CORBA::Boolean RFNoC_ProgrammableDevice_i::allocateCapacity(const CF::Properties
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
 
-    RFNoC_ProgrammableDevice_prog_base_type::allocateCapacity(capacities);
+    if (not RFNoC_ProgrammableDevice_prog_base_type::allocateCapacity(capacities)) {
+        LOG_ERROR(RFNoC_ProgrammableDevice_i, "Programmable base allocateCapacity failed");
+        return false;
+    }
 
     if (this->tuner_allocation_ids.size() != this->frontend_tuner_status.size()) {
         this->tuner_allocation_ids.resize(this->frontend_tuner_status.size());
