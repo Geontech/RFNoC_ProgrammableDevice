@@ -33,10 +33,17 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         CORBA::Boolean allocateCapacity(const CF::Properties& capacities) throw (CF::Device::InvalidState, CF::Device::InvalidCapacity, CF::Device::InsufficientCapacity, CORBA::SystemException);
         void deallocateCapacity(const CF::Properties& capacities) throw (CF::Device::InvalidState, CF::Device::InvalidCapacity, CORBA::SystemException);
 
+        virtual CF::ExecutableDevice::ProcessID_Type execute (const char* name, const CF::Properties& options, const CF::Properties& parameters)
+            throw ( CF::ExecutableDevice::ExecuteFail, CF::InvalidFileName, CF::ExecutableDevice::InvalidOptions,
+                    CF::ExecutableDevice::InvalidParameters, CF::ExecutableDevice::InvalidFunction, CF::Device::InvalidState,
+                    CORBA::SystemException);
+        virtual void terminate (CF::ExecutableDevice::ProcessID_Type processId)
+            throw ( CF::Device::InvalidState, CF::ExecutableDevice::InvalidProcess, CORBA::SystemException);
+
         bool connectRadioRX(const CORBA::ULong &portHash, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort);
         bool connectRadioTX(const std::string &allocationID, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort);
         uhd::device3::sptr getUsrp() { return this->usrp; }
-        void setHwLoadStatus(const hw_load_status_object &hwLoadStatus);
+        void setHwLoadStatus(const std::string &deviceID, const hw_load_status_object &hwLoadStatus);
 
     protected:
         Device_impl* generatePersona(int argc, char* argv[], ConstructorPtr fnptr, const char* libName);
@@ -99,6 +106,9 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         std::string getStreamId(size_t tuner_id);
 
     private:
+        typedef std::map<std::string, hw_load_statuses_struct_struct> deviceHwStatusMap;
+        typedef std::map<CF::ExecutableDevice::ProcessID_Type, std::string> pidDeviceMap;
+
         const std::string DEFAULT_BITFILE_PATH;
         const std::string HARDWARE_ID;
         const std::string IDLE_BITFILE_PATH;
@@ -106,9 +116,11 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         std::map<std::string, std::pair<uhd::rfnoc::ddc_block_ctrl::sptr, size_t> > allocationIDToDDC;
         std::map<std::string, std::pair<uhd::rfnoc::duc_block_ctrl::sptr, size_t> > allocationIDToDUC;
         bool canUnlink;
+        deviceHwStatusMap deviceIDToHwStatus;
         std::vector<uhd::rfnoc::ddc_block_ctrl::sptr> ddcs;
         std::vector<uhd::rfnoc::duc_block_ctrl::sptr> ducs;
         std::map<std::string, std::string> listeners;
+        pidDeviceMap pidToDeviceID;
         uhd::rfnoc::graph::sptr radioChainGraph;
         std::map<std::string, std::pair<uhd::rfnoc::ddc_block_ctrl::sptr, size_t> > radioIDToDDC;
         std::map<std::string, std::pair<uhd::rfnoc::duc_block_ctrl::sptr, size_t> > radioIDToDUC;

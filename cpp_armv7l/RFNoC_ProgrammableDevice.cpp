@@ -106,6 +106,65 @@ void RFNoC_ProgrammableDevice_i::constructor()
     setUsageState(CF::Device::IDLE);
 }
 
+CF::ExecutableDevice::ProcessID_Type RFNoC_ProgrammableDevice_i::execute (const char* name, const CF::Properties& options, const CF::Properties& parameters)
+    throw ( CF::ExecutableDevice::ExecuteFail, CF::InvalidFileName, CF::ExecutableDevice::InvalidOptions,
+            CF::ExecutableDevice::InvalidParameters, CF::ExecutableDevice::InvalidFunction, CF::Device::InvalidState,
+            CORBA::SystemException)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    // Call the parent execute
+    CF::ExecutableDevice::ProcessID_Type pid = RFNoC_ProgrammableDevice_prog_base_type::execute(name, options, parameters);
+
+    // Map the PID to the device identifier
+    std::string deviceIdentifier;
+
+    for (size_t i = 0; i < parameters.length(); ++i) {
+        std::string id = parameters[i].id._ptr;
+
+        if (id == "DEVICE_IDENTIFIER") {
+            deviceIdentifier = ossie::any_to_string(parameters[i].value);
+            break;
+        }
+    }
+
+    this->pidToDeviceID[pid] = deviceIdentifier;
+
+    return pid;
+}
+
+void RFNoC_ProgrammableDevice_i::terminate (CF::ExecutableDevice::ProcessID_Type processId)
+                    throw ( CF::Device::InvalidState, CF::ExecutableDevice::InvalidProcess, CORBA::SystemException)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    if (this->pidToDeviceID.find(processId) == this->pidToDeviceID.end()) {
+        LOG_WARN(RFNoC_ProgrammableDevice_i, "Attempted to terminate a process with an ID not tracked by this Device");
+        throw CF::ExecutableDevice::InvalidProcess();
+    }
+
+    // Get the device identifier associated with this PID
+    std::string deviceID = this->pidToDeviceID[processId];
+
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Terminating device: " << deviceID);
+
+    // Unmap the PID from the device identifier
+    this->pidToDeviceID.erase(processId);
+
+    // Unmap the device identifier from the HW Load Status
+    this->deviceIDToHwStatus.erase(deviceID);
+
+    // Adjust the HW load statuses property
+    this->hw_load_statuses.clear();
+
+    for (deviceHwStatusMap::iterator it = this->deviceIDToHwStatus.begin(); it != this->deviceIDToHwStatus.end(); ++it) {
+        this->hw_load_statuses.push_back(it->second);
+    }
+
+    // Call the parent terminate
+    RFNoC_ProgrammableDevice_prog_base_type::terminate(processId);
+}
+
 bool RFNoC_ProgrammableDevice_i::connectRadioRX(const CORBA::ULong &portHash, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort)
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
@@ -180,7 +239,7 @@ int RFNoC_ProgrammableDevice_i::serviceFunction()
     return NOOP;
 }
 
-void RFNoC_ProgrammableDevice_i::setHwLoadStatus(const hw_load_status_object &hwLoadStatus)
+void RFNoC_ProgrammableDevice_i::setHwLoadStatus(const std::string &deviceID, const hw_load_status_object &hwLoadStatus)
 {
     LOG_INFO(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
@@ -191,7 +250,13 @@ void RFNoC_ProgrammableDevice_i::setHwLoadStatus(const hw_load_status_object &hw
     hwLoadStatusStruct.requester_id = hwLoadStatus.requester_id;
     hwLoadStatusStruct.state = hwLoadStatus.state;
 
-    this->hw_load_statuses.push_back(hwLoadStatusStruct);
+    this->deviceIDToHwStatus[deviceID] = hwLoadStatusStruct;
+
+    this->hw_load_statuses.clear();
+
+    for (deviceHwStatusMap::iterator it = this->deviceIDToHwStatus.begin(); it != this->deviceIDToHwStatus.end(); ++it) {
+        this->hw_load_statuses.push_back(it->second);
+    }
 }
 
 Device_impl* RFNoC_ProgrammableDevice_i::generatePersona(int argc, char* argv[], ConstructorPtr personaEntryPoint, const char* libName)
@@ -201,7 +266,7 @@ Device_impl* RFNoC_ProgrammableDevice_i::generatePersona(int argc, char* argv[],
     connectRadioRXCallback connectionRadioRXCb = boost::bind(&RFNoC_ProgrammableDevice_i::connectRadioRX, this, _1, _2, _3);
     connectRadioTXCallback connectionRadioTXCb = boost::bind(&RFNoC_ProgrammableDevice_i::connectRadioTX, this, _1, _2, _3);
     getUsrpCallback getUsrpCb = boost::bind(&RFNoC_ProgrammableDevice_i::getUsrp, this);
-    hwLoadStatusCallback hwLoadStatusCb = boost::bind(&RFNoC_ProgrammableDevice_i::setHwLoadStatus, this, _1);
+    hwLoadStatusCallback hwLoadStatusCb = boost::bind(&RFNoC_ProgrammableDevice_i::setHwLoadStatus, this, _1, _2);
 
     // Generate the Persona Device
     Device_impl *persona = personaEntryPoint(argc, argv, this, connectionRadioRXCb, connectionRadioTXCb, getUsrpCb, hwLoadStatusCb);

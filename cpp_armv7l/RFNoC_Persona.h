@@ -19,6 +19,6 @@ struct hw_load_status_object {
     unsigned short state;
 };
 
-typedef boost::function<void(const hw_load_status_object &hwLoadStatus)> hwLoadStatusCallback;
+typedef boost::function<void(const std::string &deviceID, const hw_load_status_object &hwLoadStatus)> hwLoadStatusCallback;
 
 #endif

@@ -519,12 +519,6 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
                 return NULL;
             }  
             
-            for (size_t ii = 0; ii < options.length(); ++ii) {
-                std::string id(options[ii].id);
-
-                LOG_DEBUG(RFNoC_ProgrammableDevice_prog_base, "OPTION[" << ii << "].id = " << id);
-            }
-
             // Add SKIP_FLAG to properties
             CF::Properties combinedProps = parameters;
             unsigned int skipRunInd;
