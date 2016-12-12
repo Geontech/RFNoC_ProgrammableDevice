@@ -17,32 +17,40 @@ PREPARE_LOGGING(RFNoC_ProgrammableDevice_i)
 
 RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl) :
     RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl),
+    DEFAULT_BITFILE_PATH("/usr/share/uhd/images/usrp_e310_fpga.bit"),
     HARDWARE_ID("E310"),
-    IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit")
+    IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit"),
+    canUnlink(true)
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 }
 
 RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl, char *compDev) :
     RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl, compDev),
+    DEFAULT_BITFILE_PATH("/usr/share/uhd/images/usrp_e310_fpga.bit"),
     HARDWARE_ID("E310"),
-    IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit")
+    IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit"),
+    canUnlink(true)
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 }
 
 RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl, CF::Properties capacities) :
     RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl, capacities),
+    DEFAULT_BITFILE_PATH("/usr/share/uhd/images/usrp_e310_fpga.bit"),
     HARDWARE_ID("E310"),
-    IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit")
+    IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit"),
+    canUnlink(true)
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 }
 
 RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl, CF::Properties capacities, char *compDev) :
     RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl, capacities, compDev),
+    DEFAULT_BITFILE_PATH("/usr/share/uhd/images/usrp_e310_fpga.bit"),
     HARDWARE_ID("E310"),
-    IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit")
+    IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit"),
+    canUnlink(true)
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 }
@@ -76,6 +84,19 @@ void RFNoC_ProgrammableDevice_i::constructor()
     }
 
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Trying target_device: " << this->usrpAddress.to_pp_string());
+
+    // Check if the default image path exists. If so, then only personas with a
+    // bitfile path that matches the default can be loaded
+    if (boost::filesystem::exists(this->DEFAULT_BITFILE_PATH)) {
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "Default bitfile path (" << this->DEFAULT_BITFILE_PATH << ") exists");
+        this->canUnlink = false;
+
+        if (boost::filesystem::is_symlink(this->DEFAULT_BITFILE_PATH)) {
+            LOG_WARN(RFNoC_ProgrammableDevice_i, "Default bitfile is a symbolic link. If this is unintentional, please release this Device, unlink the file, and restart the Device");
+        } else {
+            LOG_WARN(RFNoC_ProgrammableDevice_i, "Due to the presence of this file, only a Persona with a matching FPGA bitfile path can be launched. For proper behavior, please consult the documentation");
+        }
+    }
 
     // Register the property change listeners
     this->addPropertyListener(this->connectionTable, this, &RFNoC_ProgrammableDevice_i::connectionTableChanged);
@@ -199,11 +220,34 @@ bool RFNoC_ProgrammableDevice_i::loadHardware(HwLoadStatusStruct& requestStatus)
     // The hardware may be physically loaded at this point
     LOG_INFO(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
+    // Create a symbolic link from the default file path to the requested file
+    // path, if necessary
+    if (this->canUnlink) {
+        if (boost::filesystem::exists(this->DEFAULT_BITFILE_PATH)) {
+            LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Default bitfile path exists, unlinking");
+
+            if (not boost::filesystem::remove(this->DEFAULT_BITFILE_PATH)) {
+                LOG_ERROR(RFNoC_ProgrammableDevice_i, "A problem occurred while unlinking the default bitfile symbolic link");
+                return false;
+            }
+        }
+
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Creating symbolic link to requested bitfile path");
+
+        boost::system::error_code ec;
+        boost::filesystem::create_symlink(requestStatus.load_filepath, this->DEFAULT_BITFILE_PATH, ec);
+
+        if (ec.error_code() != boost::system::errc::success) {
+            LOG_ERROR(RFNoC_ProgrammableDevice_i, "A problem occurred while linking the requested bitfile path");
+            return false;
+        }
+    }
+
     // Load the requested bitfile
     uhd::image_loader::image_loader_args_t image_loader_args;
 
     image_loader_args.firmware_path = "";
-    image_loader_args.fpga_path = requestStatus.load_filepath;
+    image_loader_args.fpga_path = this->DEFAULT_BITFILE_PATH;
     image_loader_args.load_firmware = false;
     image_loader_args.load_fpga = true;
 
@@ -282,6 +326,15 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
     image_loader_args.load_fpga = true;
 
     uhd::image_loader::load(image_loader_args);
+
+    // Remove the symbolic link, if necessary
+    if (this->canUnlink) {
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Removing symbolic link from requested bitfile path");
+
+        if (not boost::filesystem::remove(this->DEFAULT_BITFILE_PATH)) {
+            LOG_ERROR(RFNoC_ProgrammableDevice_i, "A problem occurred while unlinking the default bitfile symbolic link");
+        }
+    }
 }
 
 bool RFNoC_ProgrammableDevice_i::hwLoadRequestIsValid(const HwLoadRequestStruct& hwLoadRequestStruct)
@@ -298,6 +351,15 @@ bool RFNoC_ProgrammableDevice_i::hwLoadRequestIsValid(const HwLoadRequestStruct&
         LOG_WARN(RFNoC_ProgrammableDevice_i, "Failed to validate hardware load request. Load file path is invalid.");
         LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Invalid file path: " << hwLoadRequestStruct.load_filepath);
         return false;
+    }
+
+    if (not this->canUnlink) {
+        if (hwLoadRequestStruct.load_filepath != this->DEFAULT_BITFILE_PATH) {
+            LOG_WARN(RFNoC_ProgrammableDevice_i, "Failed to validate hardware load request. The default bitfile exists and the requested bitfile does not match.");
+            LOG_WARN(RFNoC_ProgrammableDevice_i, "Default bitfile: " << this->DEFAULT_BITFILE_PATH);
+            LOG_WARN(RFNoC_ProgrammableDevice_i, "Received bitfile: " << hwLoadRequestStruct.load_filepath);
+            return false;
+        }
     }
 
     return true;

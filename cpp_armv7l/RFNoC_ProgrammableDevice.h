@@ -99,12 +99,15 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         std::string getStreamId(size_t tuner_id);
 
     private:
-        std::map<std::string, std::pair<uhd::rfnoc::ddc_block_ctrl::sptr, size_t> > allocationIDToDDC;
-        std::map<std::string, std::pair<uhd::rfnoc::duc_block_ctrl::sptr, size_t> > allocationIDToDUC;
-        std::vector<uhd::rfnoc::ddc_block_ctrl::sptr> ddcs;
-        std::vector<uhd::rfnoc::duc_block_ctrl::sptr> ducs;
+        const std::string DEFAULT_BITFILE_PATH;
         const std::string HARDWARE_ID;
         const std::string IDLE_BITFILE_PATH;
+
+        std::map<std::string, std::pair<uhd::rfnoc::ddc_block_ctrl::sptr, size_t> > allocationIDToDDC;
+        std::map<std::string, std::pair<uhd::rfnoc::duc_block_ctrl::sptr, size_t> > allocationIDToDUC;
+        bool canUnlink;
+        std::vector<uhd::rfnoc::ddc_block_ctrl::sptr> ddcs;
+        std::vector<uhd::rfnoc::duc_block_ctrl::sptr> ducs;
         std::map<std::string, std::string> listeners;
         uhd::rfnoc::graph::sptr radioChainGraph;
         std::map<std::string, std::pair<uhd::rfnoc::ddc_block_ctrl::sptr, size_t> > radioIDToDDC;
