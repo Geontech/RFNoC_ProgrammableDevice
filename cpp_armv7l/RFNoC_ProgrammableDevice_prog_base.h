@@ -616,7 +616,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
                 // Find an available hw load status struct
                 availableStatusIndex = findAvailableHwLoadStatusIndex(loadStatusVec);
                 if (availableStatusIndex > -1) {
-                    success |= applyHwLoadRequest(loadRequestVec[ii], loadStatusVec[availableStatusIndex]);
+                    success &= applyHwLoadRequest(loadRequestVec[ii], loadStatusVec[availableStatusIndex]);
                     usedStatusIndices.push_back(availableStatusIndex);
                 } else {
                     LOG_ERROR(RFNoC_ProgrammableDevice_prog_base, __FUNCTION__ << 
