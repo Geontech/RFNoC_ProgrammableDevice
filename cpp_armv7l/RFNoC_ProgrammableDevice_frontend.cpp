@@ -9,10 +9,9 @@ CORBA::Boolean RFNoC_ProgrammableDevice_i::allocateCapacity(const CF::Properties
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
 
-    if (not RFNoC_ProgrammableDevice_prog_base_type::allocateCapacity(capacities)) {
-        LOG_ERROR(RFNoC_ProgrammableDevice_i, "Programmable base allocateCapacity failed");
-        return false;
-    }
+    bool retValue;
+
+    retValue = RFNoC_ProgrammableDevice_prog_base_type::allocateCapacity(capacities);
 
     if (this->tuner_allocation_ids.size() != this->frontend_tuner_status.size()) {
         this->tuner_allocation_ids.resize(this->frontend_tuner_status.size());
@@ -213,7 +212,7 @@ CORBA::Boolean RFNoC_ProgrammableDevice_i::allocateCapacity(const CF::Properties
     }
     catch(const std::logic_error &e) {
         deallocateCapacity(capacities);
-        return false;
+        return retValue;
     }
     catch(frontend::AllocationAlreadyExists &e) {
         // Don't call deallocateCapacity if the allocationId already exists
@@ -226,7 +225,7 @@ CORBA::Boolean RFNoC_ProgrammableDevice_i::allocateCapacity(const CF::Properties
     }
     catch(FRONTEND::BadParameterException &e) {
         deallocateCapacity(capacities);
-        return false;
+        return retValue;
     }
     catch(...){
         deallocateCapacity(capacities);
