@@ -260,7 +260,7 @@ int RFNoC_ProgrammableDevice_i::serviceFunction()
 
 void RFNoC_ProgrammableDevice_i::setHwLoadStatus(const std::string &deviceID, const hw_load_status_object &hwLoadStatus)
 {
-    LOG_INFO(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
     hw_load_statuses_struct_struct hwLoadStatusStruct;
     hwLoadStatusStruct.hardware_id = hwLoadStatus.hardware_id;
