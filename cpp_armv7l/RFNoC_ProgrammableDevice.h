@@ -106,6 +106,7 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
 
     private:
         std::string getStreamId(size_t tuner_id);
+        bool loadBitfile(const std::string &bitfilePath);
 
     private:
         typedef std::map<std::string, hw_load_statuses_struct_struct> deviceHwStatusMap;

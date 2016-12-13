@@ -169,12 +169,16 @@ void RFNoC_ProgrammableDevice_i::releaseObject() throw (CF::LifeCycle::ReleaseEr
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
-    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Unloading HW statuses");
+    // Load the idle bitfile
+    loadBitfile(this->IDLE_BITFILE_PATH);
 
-    for (deviceHwStatusMap::iterator it = this->deviceIDToHwStatus.begin(); it != this->deviceIDToHwStatus.end(); ++it) {
-        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Checking status with load filepath: " << it->second.load_filepath);
+    // Remove the symbolic link, if necessary
+    if (this->canUnlink) {
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Removing symbolic link from requested bitfile path");
 
-        unloadHardware(it->second);
+        if (not boost::filesystem::remove(this->DEFAULT_BITFILE_PATH)) {
+            LOG_ERROR(RFNoC_ProgrammableDevice_i, "A problem occurred while unlinking the default bitfile symbolic link");
+        }
     }
 
     RFNoC_ProgrammableDevice_prog_base_type::releaseObject();
@@ -324,14 +328,7 @@ bool RFNoC_ProgrammableDevice_i::loadHardware(HwLoadStatusStruct& requestStatus)
     }
 
     // Load the requested bitfile
-    uhd::image_loader::image_loader_args_t image_loader_args;
-
-    image_loader_args.firmware_path = "";
-    image_loader_args.fpga_path = this->DEFAULT_BITFILE_PATH;
-    image_loader_args.load_firmware = false;
-    image_loader_args.load_fpga = true;
-
-    uhd::image_loader::load(image_loader_args);
+    loadBitfile(this->DEFAULT_BITFILE_PATH);
 
     // Allow some time for setup
     boost::this_thread::sleep(boost::posix_time::seconds(1.0));
@@ -398,14 +395,7 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
     this->updateSRI.clear();
 
     // Load the idle bitfile
-    uhd::image_loader::image_loader_args_t image_loader_args;
-
-    image_loader_args.firmware_path = "";
-    image_loader_args.fpga_path = this->IDLE_BITFILE_PATH;
-    image_loader_args.load_firmware = false;
-    image_loader_args.load_fpga = true;
-
-    uhd::image_loader::load(image_loader_args);
+    loadBitfile(this->IDLE_BITFILE_PATH);
 
     // Remove the symbolic link, if necessary
     if (this->canUnlink) {
@@ -847,4 +837,20 @@ std::string RFNoC_ProgrammableDevice_i::getStreamId(size_t tuner_id)
         LOG_DEBUG(RFNoC_ProgrammableDevice_i,"RFNoC_ProgrammableDevice_i::getStreamId - returning EXISTING stream id: "<< frontend_tuner_status[tuner_id].stream_id);
     }
     return frontend_tuner_status[tuner_id].stream_id;
+}
+
+bool RFNoC_ProgrammableDevice_i::loadBitfile(const std::string &bitfilePath)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Attempting to load bitfile: " << bitfilePath);
+
+    uhd::image_loader::image_loader_args_t image_loader_args;
+
+    image_loader_args.firmware_path = "";
+    image_loader_args.fpga_path = bitfilePath;
+    image_loader_args.load_firmware = false;
+    image_loader_args.load_fpga = true;
+
+    return uhd::image_loader::load(image_loader_args);
 }
