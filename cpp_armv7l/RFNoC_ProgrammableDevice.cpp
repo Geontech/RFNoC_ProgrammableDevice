@@ -447,7 +447,7 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
 
     // Grab the radio blocks
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Getting radio block");
-    this->radio = this->usrp->get_block_ctrl<uhd::rfnoc::radio_ctrl>("Radio");
+    this->radio = this->usrp->get_block_ctrl<uhd::rfnoc::radio_ctrl>(uhd::rfnoc::block_id_t("Radio"));
 
     if (not this->radio.get()) {
         LOG_ERROR(RFNoC_ProgrammableDevice_i, "Unable to get the Radio block for this hardware load");
@@ -487,7 +487,7 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
 
         uhd::rfnoc::duc_block_ctrl::sptr duc = this->usrp->get_block_ctrl<uhd::rfnoc::duc_block_ctrl>(blockId);
 
-        numDucChannels += duc->get_input_ports();
+        numDucChannels += duc->get_input_ports().size();
 
         tmpDucs.push_back(duc);
     }
@@ -651,7 +651,7 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
     // Get the radio and channel for the requested tuner
-    size_t radioChannel = this->tunerIDToRadioChannel.find(tuner_id);
+    size_t radioChannel = this->tunerIDToRadioChannel[tuner_id];
 
     // Make sure it isn't already in use
     if (this->tunerIDUsed[tuner_id]) {
