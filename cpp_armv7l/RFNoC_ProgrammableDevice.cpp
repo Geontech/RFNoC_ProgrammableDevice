@@ -88,6 +88,7 @@ void RFNoC_ProgrammableDevice_i::constructor()
     // Check if the default image path exists. If so, then only personas with a
     // bitfile path that matches the default can be loaded
     if (boost::filesystem::exists(this->DEFAULT_BITFILE_PATH)) {
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "*********************************************************************************************************************************************************");
         LOG_INFO(RFNoC_ProgrammableDevice_i, "Default bitfile path (" << this->DEFAULT_BITFILE_PATH << ") exists");
         this->canUnlink = false;
 
@@ -96,6 +97,8 @@ void RFNoC_ProgrammableDevice_i::constructor()
         } else {
             LOG_WARN(RFNoC_ProgrammableDevice_i, "Due to the presence of this file, only a Persona with a matching FPGA bitfile path can be launched. For proper behavior, please consult the documentation");
         }
+
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "*********************************************************************************************************************************************************");
     }
 
     // Register the property change listeners
@@ -302,7 +305,7 @@ Device_impl* RFNoC_ProgrammableDevice_i::generatePersona(int argc, char* argv[],
 bool RFNoC_ProgrammableDevice_i::loadHardware(HwLoadStatusStruct& requestStatus) 
 {
     // The hardware may be physically loaded at this point
-    LOG_INFO(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
     // Create a symbolic link from the default file path to the requested file
     // path, if necessary
@@ -360,12 +363,20 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
     // The hardware may be physically unloaded at this point
     LOG_INFO(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
-    // Reset the USRP device
+    // Clear the radio
+    if (this->radio.get()) {
+        this->radio->clear();
+    }
+
+    // Reset the radio pointer
+    this->radio.reset();
+
+    // Clear the USRP device
     if (this->usrp.get()) {
         this->usrp->clear();
     }
 
-    // Clear the USRP
+    // Reset the USRP pointer
     this->usrp.reset();
 
     // Clear the graph
@@ -375,20 +386,15 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
     this->allocationIDToDDC.clear();
     this->allocationIDToDUC.clear();
 
-    // Clear the map of radio IDs to DDCs/DUCs
-    this->radioIDToDDC.clear();
-    this->radioIDToDUC.clear();
+    // Clear the map of radio channels to DDCs/DUCs
+    this->radioChannelToDDC.clear();
+    this->radioChannelToDUC.clear();
 
     // Clear the map of tuner IDs to radios
-    this->tunerIDToRadio.clear();
+    this->tunerIDToRadioChannel.clear();
 
     // Clear the map of tuner IDs to radio use status
     this->tunerIDUsed.clear();
-
-    // Clear the radios, DDCs, and DUCs
-    this->radios.clear();
-    this->ddcs.clear();
-    this->ducs.clear();
 
     // Clear the frontend_tuner_status and related lists
     setNumChannels(0);
@@ -440,22 +446,20 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
     // Grab the radio blocks
-    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Searching for radio blocks");
-    std::vector<uhd::rfnoc::block_id_t> radioBlockIDs = this->usrp->find_blocks("Radio");
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Getting radio block");
+    this->radio = this->usrp->get_block_ctrl<uhd::rfnoc::radio_ctrl>("Radio");
 
-    for (size_t i = 0; i < radioBlockIDs.size(); ++i) {
-        uhd::rfnoc::block_id_t blockId = radioBlockIDs[i];
-
-        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Found radio block with ID: " << blockId.to_string());
-
-        uhd::rfnoc::radio_ctrl::sptr radio = this->usrp->get_block_ctrl<uhd::rfnoc::radio_ctrl>(blockId);
-
-        this->radios.push_back(radio);
+    if (not this->radio.get()) {
+        LOG_ERROR(RFNoC_ProgrammableDevice_i, "Unable to get the Radio block for this hardware load");
+        return;
     }
 
     // Grab the DDC blocks
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Searching for DDC blocks");
     std::vector<uhd::rfnoc::block_id_t> ddcBlockIDs = this->usrp->find_blocks("DDC");
+    std::vector<uhd::rfnoc::ddc_block_ctrl::sptr> tmpDdcs;
+
+    size_t numDdcChannels = 0;
 
     for (size_t i = 0; i < ddcBlockIDs.size(); ++i) {
         uhd::rfnoc::block_id_t blockId = ddcBlockIDs[i];
@@ -464,12 +468,17 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
 
         uhd::rfnoc::ddc_block_ctrl::sptr ddc = this->usrp->get_block_ctrl<uhd::rfnoc::ddc_block_ctrl>(blockId);
 
-        this->ddcs.push_back(ddc);
+        numDdcChannels += ddc->get_input_ports().size();
+
+        tmpDdcs.push_back(ddc);
     }
 
     // Grab the DUC blocks
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Searching for DUC blocks");
     std::vector<uhd::rfnoc::block_id_t> ducBlockIDs = this->usrp->find_blocks("DUC");
+    std::vector<uhd::rfnoc::duc_block_ctrl::sptr> tmpDucs;
+
+    size_t numDucChannels = 0;
 
     for (size_t i = 0; i < ducBlockIDs.size(); ++i) {
         uhd::rfnoc::block_id_t blockId = ducBlockIDs[i];
@@ -478,112 +487,97 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
 
         uhd::rfnoc::duc_block_ctrl::sptr duc = this->usrp->get_block_ctrl<uhd::rfnoc::duc_block_ctrl>(blockId);
 
-        this->ducs.push_back(duc);
+        numDucChannels += duc->get_input_ports();
+
+        tmpDucs.push_back(duc);
     }
 
-    // Determine the number of valid chains
-    size_t validRXChains = std::min(this->radios.size(), this->ddcs.size());
-    size_t validTXChains = std::min(this->radios.size(), this->ducs.size());
+    // Connect the radio to the DDC(s) and DUC(s), if possible
+    if (numDdcChannels == 0) {
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "No DDCs available, RX not possible");
+    } else if (numDdcChannels == 1) {
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "Only one DDC channel available, RX possible on one channel only")
 
-    if (validRXChains != this->radios.size()) {
-        LOG_WARN(RFNoC_ProgrammableDevice_i, "Not enough DDCs are available for the number of radios");
-    }
+        this->radioChainGraph->connect(this->radio->get_block_id(), tmpDdcs[0]->get_block_id());
 
-    if (validTXChains != this->radios.size()) {
-        LOG_WARN(RFNoC_ProgrammableDevice_i, "Not enough DUCs are available for the number of radios");
-    }
+        this->radioChannelToDDC[0] = std::make_pair(tmpDdcs[0], 0);
+    } else {
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "Sufficient DDCs for RX on all radios");
 
-    // Determine the number of channels
-    size_t numRXChannels = 0;
-    size_t numTXChannels = 0;
+        if (tmpDdcs.size() == 1) {
+            this->radioChainGraph->connect(this->radio->get_block_id(), 0, tmpDdcs[0]->get_block_id(), 0);
+            this->radioChainGraph->connect(this->radio->get_block_id(), 1, tmpDdcs[0]->get_block_id(), 1);
 
-    // Iterate over the valid RX chains, gathering the number of channels and
-    // connecting the radio blocks to the DDC blocks
-    for (size_t i = 0; i < validRXChains; ++i) {
-        uhd::rfnoc::block_id_t ddcBlockID = this->ddcs[i]->get_block_id();
-        std::vector<size_t> outputPorts = this->radios[i]->get_output_ports();
-        uhd::rfnoc::block_id_t radioBlockID = this->radios[i]->get_block_id();
+            this->radioChannelToDDC[0] = std::make_pair(tmpDdcs[0], 0);
+            this->radioChannelToDDC[1] = std::make_pair(tmpDdcs[0], 1);
+        } else {
+            this->radioChainGraph->connect(this->radio->get_block_id(), 0, tmpDdcs[0]->get_block_id(), 0);
+            this->radioChainGraph->connect(this->radio->get_block_id(), 1, tmpDdcs[1]->get_block_id(), 0);
 
-        numRXChannels += outputPorts.size();
-
-        for (size_t j = 0; j < outputPorts.size(); ++j) {
-            size_t portNumber = outputPorts[j];
-
-            LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Connecting port " << portNumber << " between " << radioBlockID.to_string() << " and " << ddcBlockID.to_string());
-
-            this->radioChainGraph->connect(radioBlockID, portNumber, ddcBlockID, portNumber);
-
-            std::stringstream modifiedRadioID;
-
-            modifiedRadioID << this->radios[i]->get_block_id().to_string();
-            modifiedRadioID << j;
-
-            this->radioIDToDDC[modifiedRadioID.str()] = std::make_pair(this->ddcs[i], j);
+            this->radioChannelToDDC[0] = std::make_pair(tmpDdcs[0], 0);
+            this->radioChannelToDDC[1] = std::make_pair(tmpDdcs[1], 0);
         }
     }
 
-    // Iterate over the valid TX chains, gathering the number of channels and
-    // connecting the radio blocks to the DUC blocks
-    for (size_t i = 0; i < validTXChains; ++i) {
-        uhd::rfnoc::block_id_t ducBlockID = this->ducs[i]->get_block_id();
-        std::vector<size_t> inputPorts = this->radios[i]->get_input_ports();
-        uhd::rfnoc::block_id_t radioBlockID = this->radios[i]->get_block_id();
+    if (numDucChannels == 0) {
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "No DUCs available, TX not possible");
+    } else if (numDucChannels == 1) {
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "Only one DUC channel available, TX possible on one channel only")
 
-        numTXChannels += inputPorts.size();
+        this->radioChainGraph->connect(tmpDucs[0]->get_block_id(), this->radio->get_block_id());
 
-        for (size_t j = 0; j < inputPorts.size(); ++j) {
-            size_t portNumber = inputPorts[j];
+        this->radioChannelToDUC[0] = std::make_pair(tmpDucs[0], 0);
+    } else {
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "Sufficient DUCs for TX on all radios");
 
-            LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Connecting port " << portNumber << " between " << ducBlockID.to_string() << " and " << radioBlockID.to_string());
+        if (tmpDucs.size() == 1) {
+            this->radioChainGraph->connect(tmpDucs[0]->get_block_id(), 0, this->radio->get_block_id(), 0);
+            this->radioChainGraph->connect(tmpDucs[0]->get_block_id(), 1, this->radio->get_block_id(), 1);
 
-            this->radioChainGraph->connect(ducBlockID, portNumber, radioBlockID, portNumber);
+            this->radioChannelToDUC[0] = std::make_pair(tmpDucs[0], 0);
+            this->radioChannelToDUC[1] = std::make_pair(tmpDucs[0], 1);
+        } else {
+            this->radioChainGraph->connect(tmpDucs[0]->get_block_id(), 0, this->radio->get_block_id(), 0);
+            this->radioChainGraph->connect(tmpDucs[1]->get_block_id(), 0, this->radio->get_block_id(), 1);
 
-            std::stringstream modifiedRadioID;
-
-            modifiedRadioID << this->radios[i]->get_block_id().to_string();
-            modifiedRadioID << j;
-
-            this->radioIDToDUC[modifiedRadioID.str()] = std::make_pair(this->ducs[i], j);
+            this->radioChannelToDUC[0] = std::make_pair(tmpDucs[0], 0);
+            this->radioChannelToDUC[1] = std::make_pair(tmpDucs[1], 0);
         }
     }
 
-    setNumChannels(numRXChannels + numTXChannels);
+    setNumChannels(numDdcChannels + numDucChannels);
 
     size_t currentStatus = 0;
 
-    for (size_t i = 0; i < validRXChains; ++i) {
-        std::vector<size_t> outputPorts = this->radios[i]->get_output_ports();
+    std::vector<size_t> outputPorts = this->radio->get_output_ports();
 
-        for (size_t j = 0; j < outputPorts.size(); ++j) {
-            frontend_tuner_status_struct_struct &fts = this->frontend_tuner_status[currentStatus];
+    for (size_t i = 0; i < outputPorts.size(); ++i) {
+        frontend_tuner_status_struct_struct &fts = this->frontend_tuner_status[currentStatus];
 
-            fts.bandwidth = this->radios[i]->get_output_samp_rate(j);
-            fts.center_frequency = this->radios[i]->get_rx_frequency(j);
-            fts.sample_rate = this->radios[i]->get_output_samp_rate(j);
+        fts.bandwidth = this->radio->get_output_samp_rate(i);
+        fts.center_frequency = this->radio->get_rx_frequency(i);
+        fts.sample_rate = this->radio->get_output_samp_rate(i);
 
-            this->tunerIDToRadio[currentStatus] = std::make_pair(this->radios[i], j);
-            this->tunerIDUsed[currentStatus] = false;
+        this->tunerIDToRadioChannel[currentStatus] = i;
+        this->tunerIDUsed[currentStatus] = false;
 
-            ++currentStatus;
-        }
+        ++currentStatus;
     }
 
-    for (size_t i = 0; i < validTXChains; ++i) {
-        std::vector<size_t> inputPorts = this->radios[i]->get_input_ports();
+    std::vector<size_t> inputPorts = this->radio->get_input_ports();
 
-        for (size_t j = 0; j < inputPorts.size(); ++j) {
-            frontend_tuner_status_struct_struct &fts = this->frontend_tuner_status[currentStatus];
+    for (size_t i = 0; i < inputPorts.size(); ++i) {
+        frontend_tuner_status_struct_struct &fts = this->frontend_tuner_status[currentStatus];
 
-            fts.bandwidth = this->radios[i]->get_input_samp_rate(j);
-            fts.center_frequency = this->radios[i]->get_tx_frequency(j);
-            fts.sample_rate = this->radios[i]->get_input_samp_rate(j);
-            fts.tuner_type = "TX";
+        fts.bandwidth = this->radio->get_input_samp_rate(i);
+        fts.center_frequency = this->radio->get_tx_frequency(i);
+        fts.sample_rate = this->radio->get_input_samp_rate(i);
+        fts.tuner_type = "TX";
 
-            this->tunerIDToRadio[currentStatus] = std::make_pair(this->radios[i], j);
-            this->tunerIDUsed[currentStatus] = false;
+        this->tunerIDToRadioChannel[currentStatus] = i;
+        this->tunerIDUsed[currentStatus] = false;
 
-            ++currentStatus;
-        }
+        ++currentStatus;
     }
 
     this->updateSRI.clear();
@@ -612,12 +606,12 @@ void RFNoC_ProgrammableDevice_i::deviceEnable(frontend_tuner_status_struct_struc
     ************************************************************/
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
-    std::pair<uhd::rfnoc::radio_ctrl::sptr, size_t> radio = this->tunerIDToRadio[tuner_id];
+    size_t radioChannel = this->tunerIDToRadioChannel[tuner_id];
 
     if (fts.tuner_type == "RX_DIGITIZER") {
-        radio.first->set_rx_streamer(true, radio.second);
+        radio->set_rx_streamer(true, radioChannel);
     } else if (fts.tuner_type == "TX") {
-        radio.first->set_tx_streamer(true, radio.second);
+        radio->set_tx_streamer(true, radioChannel);
     }
 
     fts.enabled = true;
@@ -634,12 +628,12 @@ void RFNoC_ProgrammableDevice_i::deviceDisable(frontend_tuner_status_struct_stru
     ************************************************************/
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
-    std::pair<uhd::rfnoc::radio_ctrl::sptr, size_t> radio = this->tunerIDToRadio[tuner_id];
+    size_t radioChannel = this->tunerIDToRadioChannel[tuner_id];
 
     if (fts.tuner_type == "RX_DIGITIZER") {
-        radio.first->set_rx_streamer(false, radio.second);
+        radio->set_rx_streamer(false, radioChannel);
     } else if (fts.tuner_type == "TX") {
-        radio.first->set_tx_streamer(false, radio.second);
+        radio->set_tx_streamer(false, radioChannel);
     }
 
     fts.enabled = false;
@@ -657,14 +651,7 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
     // Get the radio and channel for the requested tuner
-    std::map<size_t, std::pair<uhd::rfnoc::radio_ctrl::sptr, size_t> >::iterator it;
-
-    it = this->tunerIDToRadio.find(tuner_id);
-
-    if (it == this->tunerIDToRadio.end()) {
-        LOG_ERROR(RFNoC_ProgrammableDevice_i, "Failed to set tuning: Invalid tuner ID");
-        return false;
-    }
+    size_t radioChannel = this->tunerIDToRadioChannel.find(tuner_id);
 
     // Make sure it isn't already in use
     if (this->tunerIDUsed[tuner_id]) {
@@ -673,9 +660,6 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
     }
 
     // Attempt to set the radio with the requested values
-    uhd::rfnoc::radio_ctrl::sptr radio = it->second.first;
-    size_t channel = it->second.second;
-
     if (not frontend::validateRequest(16e6, 16e6, request.bandwidth)) {
         LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Failed to set tuning: Bandwidth doesn't match 16 MHz");
         return false;
@@ -698,7 +682,7 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
         bool succeeded = false;
 
         try {
-            actualCF = radio->set_rx_frequency(request.center_frequency, channel);
+            actualCF = this->radio->set_rx_frequency(request.center_frequency, radioChannel);
 
             LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Requested CF: " << request.center_frequency << ", Actual CF: " << actualCF);
 
@@ -715,7 +699,7 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
         bool succeeded = false;
 
         try {
-            actualCF = radio->set_tx_frequency(request.center_frequency, channel);
+            actualCF = this->radio->set_tx_frequency(request.center_frequency, radioChannel);
 
             LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Requested CF: " << request.center_frequency << ", Actual CF: " << actualCF);
 
@@ -740,21 +724,11 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
 
     // Map the allocation ID to the DDC or DUC
     if (request.tuner_type == "RX_DIGITIZER") {
-        std::stringstream modifiedRadioID;
-
-        modifiedRadioID << radio->get_block_id().to_string();
-        modifiedRadioID << channel;
-
-        std::pair<uhd::rfnoc::ddc_block_ctrl::sptr, size_t> ddc = this->radioIDToDDC[modifiedRadioID.str()];
+        std::pair<uhd::rfnoc::ddc_block_ctrl::sptr, size_t> ddc = this->radioChannelToDDC[radioChannel];
 
         this->allocationIDToDDC[request.allocation_id] = ddc;
     } else if (request.tuner_type == "TX") {
-        std::stringstream modifiedRadioID;
-
-        modifiedRadioID << radio->get_block_id().to_string();
-        modifiedRadioID << channel;
-
-        std::pair<uhd::rfnoc::duc_block_ctrl::sptr, size_t> duc = this->radioIDToDUC[modifiedRadioID.str()];
+        std::pair<uhd::rfnoc::duc_block_ctrl::sptr, size_t> duc = this->radioChannelToDUC[radioChannel];
 
         this->allocationIDToDUC[request.allocation_id] = duc;
     }
@@ -762,7 +736,7 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
     // Mark this radio as used
     this->tunerIDUsed[tuner_id];
 
-    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Allocation succeeded on: " << radio->get_block_id().to_string() << ":" << channel);
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Allocation succeeded on: " << this->radio->get_block_id().to_string() << ":" << radioChannel);
 
     // creates a stream id if not already created for this tuner
     std::string stream_id = getStreamId(tuner_id);
@@ -784,15 +758,8 @@ bool RFNoC_ProgrammableDevice_i::deviceDeleteTuning(
     ************************************************************/
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
-    std::map<size_t, bool>::iterator it = this->tunerIDUsed.find(tuner_id);
-
-    if (it == this->tunerIDUsed.end()) {
-        LOG_ERROR(RFNoC_ProgrammableDevice_i, "Failed to set tuning: Invalid tuner ID");
-        return false;
-    }
-
     // No need to clean up if the tuner was not in use
-    if (not it->second) {
+    if (not this->tunerIDUsed[tuner_id]) {
         LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Device with tuner ID: " << tuner_id << " was not in use");
         return false;
     }
