@@ -551,7 +551,7 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
 
     std::vector<size_t> outputPorts = this->radio->get_output_ports();
 
-    for (size_t i = 0; i < outputPorts.size(); ++i) {
+    for (size_t i = 0; i < numDdcChannels; ++i) {
         frontend_tuner_status_struct_struct &fts = this->frontend_tuner_status[currentStatus];
 
         fts.bandwidth = this->radio->get_output_samp_rate(i);
@@ -566,7 +566,7 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
 
     std::vector<size_t> inputPorts = this->radio->get_input_ports();
 
-    for (size_t i = 0; i < inputPorts.size(); ++i) {
+    for (size_t i = 0; i < numDucChannels; ++i) {
         frontend_tuner_status_struct_struct &fts = this->frontend_tuner_status[currentStatus];
 
         fts.bandwidth = this->radio->get_input_samp_rate(i);
