@@ -57,6 +57,8 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
     private:
         void initializeRadioChain();
 
+        void desiredRxChannelsChanged(const unsigned char &oldValue, const unsigned char &newValue);
+        void desiredTxChannelsChanged(const unsigned char &oldValue, const unsigned char &newValue);
         void target_deviceChanged(const target_device_struct &oldValue, const target_device_struct &newValue);
 
     protected:

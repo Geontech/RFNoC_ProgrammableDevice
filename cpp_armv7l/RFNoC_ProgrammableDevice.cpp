@@ -349,9 +349,6 @@ bool RFNoC_ProgrammableDevice_i::loadHardware(HwLoadStatusStruct& requestStatus)
         return false;
     }
 
-    // Create the RF-NoC graph
-    this->radioChainGraph = this->usrp->create_graph("radioChainGraph");
-
     // Attempt to get the radios, DDCs, and DUCs
     initializeRadioChain();
 
@@ -445,6 +442,24 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
+    // Clear everything
+    if (this->radio.get()) {
+        this->radio.reset();
+    }
+
+    if (this->radioChainGraph.get()) {
+        this->radioChainGraph.reset();
+    }
+
+    this->radioChannelToDDC.clear();
+    this->radioChannelToDUC.clear();
+    this->tunerIDToRadioChannel.clear();
+    this->tunerIDUsed.clear();
+    this->updateSRI.clear();
+
+    // Create the RF-NoC graph
+    this->radioChainGraph = this->usrp->create_graph("radioChainGraph");
+
     // Grab the radio blocks
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Getting radio block");
     this->radio = this->usrp->get_block_ctrl<uhd::rfnoc::radio_ctrl>(uhd::rfnoc::block_id_t("Radio"));
@@ -490,6 +505,21 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
         numDucChannels += duc->get_input_ports().size();
 
         tmpDucs.push_back(duc);
+    }
+
+    // Check the properties
+    if (this->desiredRxChannels > numDdcChannels) {
+        LOG_WARN(RFNoC_ProgrammableDevice_i, "Desired number of RX channels greater than available DDC channels.");
+        this->desiredRxChannels = numDdcChannels;
+    } else {
+        numDdcChannels = this->desiredRxChannels;
+    }
+
+    if (this->desiredTxChannels > numDucChannels) {
+        LOG_WARN(RFNoC_ProgrammableDevice_i, "Desired number of TX channels greater than available DUC channels.");
+        this->desiredTxChannels = numDucChannels;
+    } else {
+        numDucChannels = this->desiredTxChannels;
     }
 
     // Connect the radio to the DDC(s) and DUC(s), if possible
@@ -580,8 +610,27 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
         ++currentStatus;
     }
 
-    this->updateSRI.clear();
     this->updateSRI.resize(this->frontend_tuner_status.size(), false);
+}
+
+void RFNoC_ProgrammableDevice_i::desiredRxChannelsChanged(const unsigned char &oldValue, const unsigned char &newValue)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    if (this->allocationIDToDDC.size() != 0 or this->allocationIDToDUC.size() != 0) {
+        LOG_WARN(RFNoC_ProgrammableDevice_i, "Attempted to change the desired number of RX channels while allocated");
+        this->desiredRxChannels = oldValue;
+    }
+}
+
+void RFNoC_ProgrammableDevice_i::desiredTxChannelsChanged(const unsigned char &oldValue, const unsigned char &newValue)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    if (this->allocationIDToDDC.size() != 0 or this->allocationIDToDUC.size() != 0) {
+        LOG_WARN(RFNoC_ProgrammableDevice_i, "Attempted to change the desired number of TX channels while allocated");
+        this->desiredTxChannels = oldValue;
+    }
 }
 
 void RFNoC_ProgrammableDevice_i::target_deviceChanged(const target_device_struct &oldValue, const target_device_struct &newValue)

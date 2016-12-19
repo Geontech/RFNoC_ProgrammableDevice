@@ -149,6 +149,24 @@ void RFNoC_ProgrammableDevice_base::loadProperties()
                 "eq",
                 "allocation");
 
+    addProperty(desiredRxChannels,
+                1,
+                "desiredRxChannels",
+                "",
+                "readwrite",
+                "",
+                "external",
+                "property");
+
+    addProperty(desiredTxChannels,
+                1,
+                "desiredTxChannels",
+                "",
+                "readwrite",
+                "",
+                "external",
+                "property");
+
     addProperty(frontend_listener_allocation,
                 frontend_listener_allocation_struct(),
                 "FRONTEND::listener_allocation",

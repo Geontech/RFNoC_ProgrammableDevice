@@ -188,4 +188,16 @@ False: Does not need control and can just attach to any currently tasked device 
     </simple>
     <configurationkind kindtype="property"/>
   </struct>
+  <simple id="desiredRxChannels" mode="readwrite" type="octet">
+    <description>The desired number of RX channels for the device.</description>
+    <value>1</value>
+    <kind kindtype="property"/>
+    <action type="external"/>
+  </simple>
+  <simple id="desiredTxChannels" mode="readwrite" type="octet">
+    <description>The desired number of TX channels for the device.</description>
+    <value>1</value>
+    <kind kindtype="property"/>
+    <action type="external"/>
+  </simple>
 </properties>

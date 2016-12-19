@@ -45,6 +45,10 @@ class RFNoC_ProgrammableDevice_base : public ExecutableDevice_impl, public virtu
         std::string os_name;
         /// Property: os_version
         std::string os_version;
+        /// Property: desiredRxChannels
+        unsigned char desiredRxChannels;
+        /// Property: desiredTxChannels
+        unsigned char desiredTxChannels;
         /// Property: frontend_listener_allocation
         frontend_listener_allocation_struct frontend_listener_allocation;
         /// Property: frontend_tuner_allocation
