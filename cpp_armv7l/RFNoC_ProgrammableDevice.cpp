@@ -528,7 +528,7 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
     } else if (numDdcChannels == 1) {
         LOG_INFO(RFNoC_ProgrammableDevice_i, "Only one DDC channel available, RX possible on one channel only")
 
-        this->radioChainGraph->connect(this->radio->get_block_id(), tmpDdcs[0]->get_block_id());
+        this->radioChainGraph->connect(this->radio->get_block_id(), 0, tmpDdcs[0]->get_block_id(), 0);
 
         this->radioChannelToDDC[0] = std::make_pair(tmpDdcs[0], 0);
     } else {
@@ -554,7 +554,7 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
     } else if (numDucChannels == 1) {
         LOG_INFO(RFNoC_ProgrammableDevice_i, "Only one DUC channel available, TX possible on one channel only")
 
-        this->radioChainGraph->connect(tmpDucs[0]->get_block_id(), this->radio->get_block_id());
+        this->radioChainGraph->connect(tmpDucs[0]->get_block_id(), 0, this->radio->get_block_id(), 0);
 
         this->radioChannelToDUC[0] = std::make_pair(tmpDucs[0], 0);
     } else {
@@ -658,9 +658,9 @@ void RFNoC_ProgrammableDevice_i::deviceEnable(frontend_tuner_status_struct_struc
     size_t radioChannel = this->tunerIDToRadioChannel[tuner_id];
 
     if (fts.tuner_type == "RX_DIGITIZER") {
-        radio->set_rx_streamer(true, radioChannel);
+        this->radio->set_rx_streamer(true, radioChannel);
     } else if (fts.tuner_type == "TX") {
-        radio->set_tx_streamer(true, radioChannel);
+        this->radio->set_tx_streamer(true, radioChannel);
     }
 
     fts.enabled = true;
@@ -680,9 +680,9 @@ void RFNoC_ProgrammableDevice_i::deviceDisable(frontend_tuner_status_struct_stru
     size_t radioChannel = this->tunerIDToRadioChannel[tuner_id];
 
     if (fts.tuner_type == "RX_DIGITIZER") {
-        radio->set_rx_streamer(false, radioChannel);
+        this->radio->set_rx_streamer(false, radioChannel);
     } else if (fts.tuner_type == "TX") {
-        radio->set_tx_streamer(false, radioChannel);
+        this->radio->set_tx_streamer(false, radioChannel);
     }
 
     fts.enabled = false;
