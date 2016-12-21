@@ -1070,7 +1070,7 @@ void RFNoC_ProgrammableDevice_i::clearFlows()
     this->tunerIDToTx.clear();
 }
 
-BULKIO::StreamSRI RFNoC_ProgrammableDevice_i::create(std::string &stream_id, frontend_tuner_status_struct_struct &frontend_status, double collector_frequency = -1.0) {
+BULKIO::StreamSRI RFNoC_ProgrammableDevice_i::create(std::string &stream_id, frontend_tuner_status_struct_struct &frontend_status, double collector_frequency) {
     BULKIO::StreamSRI sri;
     sri.hversion = 1;
     sri.xstart = 0.0;

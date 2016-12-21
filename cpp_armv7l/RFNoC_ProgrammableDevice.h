@@ -13,6 +13,7 @@ typedef RFNoC_ProgrammableDevice_prog_base<hw_load_request_struct_struct, hw_loa
 #include <uhd/rfnoc/duc_block_ctrl.hpp>
 #include <uhd/rfnoc/radio_ctrl.hpp>
 
+#include "GenericThreadedComponent.h"
 #include "RFNoC_Persona.h"
 
 // Objects necessary for data flow
