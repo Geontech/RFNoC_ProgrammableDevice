@@ -969,18 +969,16 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
         matchAllocationIdToStreamId(request.allocation_id, stream_id, "dataShort_out");
 
         // Push SRI
-        BULKIO::StreamSRI &sri = create(stream_id, fts);
+        this->tunerIDToRx[tuner_id]->sri = create(stream_id, fts);
 
-        this->tunerIDToRx[tuner_id]->sri = sri;
-
-        this->dataShort_out->pushSRI(sri);
+        this->dataShort_out->pushSRI(this->tunerIDToRx[tuner_id]->sri);
 
         // Mark this radio as used
         this->tunerIDToRx[tuner_id]->used = true;
     } else if (request.tuner_type == "TX") {
         this->allocationIDToTx[request.allocation_id] = this->tunerIDToTx[tuner_id];
 
-        uhd::rfnoc::ddc_block_ctrl::sptr duc = this->tunerIDToTx[tuner_id]->duc;
+        uhd::rfnoc::duc_block_ctrl::sptr duc = this->tunerIDToTx[tuner_id]->duc;
         size_t ducPort = this->tunerIDToTx[tuner_id]->ducPort;
 
         uhd::device_addr_t args;
