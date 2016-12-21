@@ -15,6 +15,31 @@ typedef RFNoC_ProgrammableDevice_prog_base<hw_load_request_struct_struct, hw_loa
 
 #include "RFNoC_Persona.h"
 
+// Objects necessary for data flow
+struct RxObject {
+    uhd::rfnoc::ddc_block_ctrl::sptr ddc;
+    size_t ddcPort;
+    std::vector<std::complex<short> > output;
+    size_t radioChannel;
+    uhd::rx_streamer::sptr rxStream;
+    GenericThreadedComponent *rxThread;
+    size_t spp;
+    BULKIO::StreamSRI sri;
+    bool streamStarted;
+    bool updateSRI;
+    bool used;
+};
+
+struct TxObject {
+    uhd::rfnoc::duc_block_ctrl::sptr duc;
+    size_t ducPort;
+    size_t radioChannel;
+    uhd::tx_streamer::sptr txStream;
+    GenericThreadedComponent *txThread;
+    size_t spp;
+    bool used;
+};
+
 class RFNoC_ProgrammableDevice_i;
 
 class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_type
@@ -26,7 +51,7 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl, CF::Properties capacities);
         RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl, CF::Properties capacities, char *compDev);
         ~RFNoC_ProgrammableDevice_i();
-        int serviceFunction();
+        int serviceFunction() { return FINISH; }
 
         void constructor();
 
@@ -60,6 +85,9 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         void desiredRxChannelsChanged(const unsigned char &oldValue, const unsigned char &newValue);
         void desiredTxChannelsChanged(const unsigned char &oldValue, const unsigned char &newValue);
         void target_deviceChanged(const target_device_struct &oldValue, const target_device_struct &newValue);
+
+        int rxServiceFunction(size_t streamIndex);
+        int txServiceFunction(size_t streamIndex);
 
     protected:
         typedef std::map<std::string, size_t> string_number_mapping;
@@ -107,32 +135,68 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         virtual bool listenerRequestValidation(frontend_tuner_allocation_struct &request, size_t tuner_id);
 
     private:
+        void clearFlows();
+        BULKIO::StreamSRI create(std::string &stream_id, frontend_tuner_status_struct_struct &frontend_status, double collector_frequency = -1.0);
         std::string getStreamId(size_t tuner_id);
         bool loadBitfile(const std::string &bitfilePath);
+        void retrieveRxStream(size_t streamIndex);
+        void retrieveTxStream(size_t streamIndex);
+        void startRxStream(size_t streamIndex);
+        void stopRxStream(size_t streamIndex);
 
     private:
+        ////////////////////////////
+        // Other helper functions //
+        ////////////////////////////
+        template <typename CORBAXX> bool addModifyKeyword(BULKIO::StreamSRI *sri, CORBA::String_member id, CORBAXX myValue, bool addOnly = false) {
+            CORBA::Any value;
+            value <<= myValue;
+            unsigned long keySize = sri->keywords.length();
+            if (!addOnly) {
+                for (unsigned int i = 0; i < keySize; i++) {
+                    if (!strcmp(sri->keywords[i].id, id)) {
+                        sri->keywords[i].value = value;
+                        return true;
+                    }
+                }
+            }
+            sri->keywords.length(keySize + 1);
+            if (sri->keywords.length() != keySize + 1)
+                return false;
+            sri->keywords[keySize].id = CORBA::string_dup(id);
+            sri->keywords[keySize].value = value;
+            return true;
+        }
+
+    private:
+        // Typedefs
         typedef std::map<std::string, hw_load_statuses_struct_struct> deviceHwStatusMap;
         typedef std::map<CF::ExecutableDevice::ProcessID_Type, std::string> pidDeviceMap;
 
+        // Constants
         const std::string DEFAULT_BITFILE_PATH;
         const std::string HARDWARE_ID;
         const std::string IDLE_BITFILE_PATH;
 
-        std::map<std::string, std::pair<uhd::rfnoc::ddc_block_ctrl::sptr, size_t> > allocationIDToDDC;
-        std::map<std::string, std::pair<uhd::rfnoc::duc_block_ctrl::sptr, size_t> > allocationIDToDUC;
+        // RF-NoC Members
+        uhd::rfnoc::radio_ctrl::sptr radio;
+        uhd::rfnoc::graph::sptr radioChainGraph;
+        uhd::device3::sptr usrp;
+
+        // UHD Members
+        uhd::device_addr_t usrpAddress;
+
+        // Front End Members
+        std::map<std::string, std::string> listeners;
+
+        // Programmable Members
+        std::map<std::string, RxObject *> allocationIDToRx;
+        std::map<std::string, TxObject *> allocationIDToTx;
         bool canUnlink;
         deviceHwStatusMap deviceIDToHwStatus;
-        std::map<std::string, std::string> listeners;
         pidDeviceMap pidToDeviceID;
-        uhd::rfnoc::graph::sptr radioChainGraph;
-        std::map<size_t, std::pair<uhd::rfnoc::ddc_block_ctrl::sptr, size_t> > radioChannelToDDC;
-        std::map<size_t, std::pair<uhd::rfnoc::duc_block_ctrl::sptr, size_t> > radioChannelToDUC;
-        uhd::rfnoc::radio_ctrl::sptr radio;
-        std::map<size_t, size_t> tunerIDToRadioChannel;
-        std::map<size_t, bool> tunerIDUsed;
-        std::vector<bool> updateSRI;
-        uhd::device3::sptr usrp;
-        uhd::device_addr_t usrpAddress;
+        std::map<size_t, RxObject *> tunerIDToRx;
+        std::map<size_t, TxObject *> tunerIDToTx;
 };
 
 #endif // RFNOC_PROGRAMMABLEDEVICE_I_IMPL_H

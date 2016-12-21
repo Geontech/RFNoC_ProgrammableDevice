@@ -22,6 +22,7 @@
       <provides repid="IDL:FRONTEND/DigitalTuner:1.0" providesname="DigitalTuner_in"/>
       <provides repid="IDL:FRONTEND/RFInfo:1.0" providesname="RFInfo_in"/>
       <uses repid="IDL:BULKIO/dataShort:1.0" usesname="dataShort_out"/>
+      <provides repid="IDL:BULKIO/dataShort:1.0" providesname="dataShort_in"/>
     </ports>
   </componentfeatures>
   <interfaces>

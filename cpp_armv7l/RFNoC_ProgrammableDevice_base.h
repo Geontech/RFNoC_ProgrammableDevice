@@ -69,6 +69,8 @@ class RFNoC_ProgrammableDevice_base : public ExecutableDevice_impl, public virtu
         FRONTEND_DigitalTuner_In_i *DigitalTuner_in;
         /// Port: RFInfo_in
         FRONTEND_RFInfo_In_i *RFInfo_in;
+        /// Port: dataShort_in
+        bulkio::InShortPort *dataShort_in;
         /// Port: dataShort_out
         bulkio::OutShortPort *dataShort_out;
 

@@ -48,6 +48,8 @@ RFNoC_ProgrammableDevice_base::~RFNoC_ProgrammableDevice_base()
     DigitalTuner_in = 0;
     delete RFInfo_in;
     RFInfo_in = 0;
+    delete dataShort_in;
+    dataShort_in = 0;
     delete dataShort_out;
     dataShort_out = 0;
 }
@@ -60,6 +62,8 @@ void RFNoC_ProgrammableDevice_base::construct()
     addPort("DigitalTuner_in", DigitalTuner_in);
     RFInfo_in = new FRONTEND_RFInfo_In_i("RFInfo_in", this);
     addPort("RFInfo_in", RFInfo_in);
+    dataShort_in = new bulkio::InShortPort("dataShort_in");
+    addPort("dataShort_in", dataShort_in);
     dataShort_out = new bulkio::OutShortPort("dataShort_out");
     addPort("dataShort_out", dataShort_out);
 
