@@ -965,11 +965,17 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
         // creates a stream id if not already created for this tuner
         std::string stream_id = getStreamId(tuner_id);
 
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Got stream ID: " << stream_id);
+
         // enable multi-out capability for this stream/allocation/connection
         matchAllocationIdToStreamId(request.allocation_id, stream_id, "dataShort_out");
 
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Matched allocation ID to stream ID: " << stream_id << " -> " << request.allocation_id);
+
         // Push SRI
         this->tunerIDToRx[tuner_id]->sri = create(stream_id, fts);
+
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Pushed SRI");
 
         this->dataShort_out->pushSRI(this->tunerIDToRx[tuner_id]->sri);
 
