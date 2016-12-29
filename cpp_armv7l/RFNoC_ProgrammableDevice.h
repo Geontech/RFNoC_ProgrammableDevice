@@ -68,7 +68,6 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
 
         void releaseObject() throw (CF::LifeCycle::ReleaseError, CORBA::SystemException);
 
-        bool connectRadioRX(const CORBA::ULong &portHash, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort);
         bool connectRadioTX(const std::string &allocationID, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort);
         uhd::device3::sptr getUsrp() { return this->usrp; }
         void setHwLoadStatus(const std::string &deviceID, const hw_load_status_object &hwLoadStatus);
@@ -83,12 +82,17 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
     private:
         void initializeRadioChain();
 
+        void connectionAdded(const char *connectionID);
+        void connectionRemoved(const char *connectionID);
+
         void desiredRxChannelsChanged(const unsigned char &oldValue, const unsigned char &newValue);
         void desiredTxChannelsChanged(const unsigned char &oldValue, const unsigned char &newValue);
         void target_deviceChanged(const target_device_struct &oldValue, const target_device_struct &newValue);
 
         int rxServiceFunction(size_t streamIndex);
         int txServiceFunction(size_t streamIndex);
+
+        void setGetBlockInfoFromHash(const std::string &deviceID, getBlockInfoFromHashCallback getBlockInfoFromHashCb);
 
     protected:
         typedef std::map<std::string, size_t> string_number_mapping;
@@ -172,6 +176,7 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
     private:
         // Typedefs
         typedef std::map<std::string, hw_load_statuses_struct_struct> deviceHwStatusMap;
+        typedef std::map<std::string, getBlockInfoFromHashCallback> deviceGetBlockInfoMap;
         typedef std::map<CF::ExecutableDevice::ProcessID_Type, std::string> pidDeviceMap;
 
         // Constants
@@ -191,9 +196,11 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         std::map<std::string, std::string> listeners;
 
         // Programmable Members
+        std::string activeDeviceID;
         std::map<std::string, RxObject *> allocationIDToRx;
         std::map<std::string, TxObject *> allocationIDToTx;
         bool canUnlink;
+        deviceGetBlockInfoMap deviceIDToGetBlockInfo;
         deviceHwStatusMap deviceIDToHwStatus;
         pidDeviceMap pidToDeviceID;
         std::map<size_t, RxObject *> tunerIDToRx;

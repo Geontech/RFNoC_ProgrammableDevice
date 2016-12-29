@@ -25,9 +25,9 @@ typedef Device_impl* (*ConstructorPtr)(
         int,
         char*[],
         Device_impl* parentDevice,
-        connectRadioRXCallback connectRadioRXCb,
         connectRadioTXCallback connectRadioTXCb,
         getUsrpCallback getUsrpCb,
-        hwLoadStatusCallback hwLoadStatusCb);
+        hwLoadStatusCallback hwLoadStatusCb,
+        setGetBlockInfoFromHashCallback setGetBlockInfoFromHashCb);
 
 #endif // RFNOC_PROGRAMMABLEDEVICE_ENTRY_POINTS_H

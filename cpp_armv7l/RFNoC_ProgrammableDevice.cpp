@@ -105,6 +105,10 @@ void RFNoC_ProgrammableDevice_i::constructor()
     this->addPropertyListener(this->connectionTable, this, &RFNoC_ProgrammableDevice_i::connectionTableChanged);
     this->addPropertyListener(this->target_device, this, &RFNoC_ProgrammableDevice_i::target_deviceChanged);
 
+    // Register the connection listeners
+    this->dataShort_out->setNewConnectListener(this, &RFNoC_ProgrammableDevice_i::connectionAdded);
+    this->dataShort_out->setNewDisconnectListener(this, &RFNoC_ProgrammableDevice_i::connectionRemoved);
+
     // Set the usage state to IDLE
     setUsageState(CF::Device::IDLE);
 }
@@ -125,7 +129,7 @@ CF::ExecutableDevice::ProcessID_Type RFNoC_ProgrammableDevice_i::execute (const 
     for (size_t i = 0; i < parameters.length(); ++i) {
         std::string id = parameters[i].id._ptr;
 
-        if (id == "DEVICE_IDENTIFIER") {
+        if (id == "DEVICE_ID") {
             deviceIdentifier = ossie::any_to_string(parameters[i].value);
             break;
         }
@@ -151,11 +155,14 @@ void RFNoC_ProgrammableDevice_i::terminate (CF::ExecutableDevice::ProcessID_Type
 
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Terminating device: " << deviceID);
 
-    // Unmap the PID from the device identifier
-    this->pidToDeviceID.erase(processId);
+    // Unmap the device identifier from the Get Block Info callback
+    this->deviceIDToGetBlockInfo.erase(deviceID);
 
     // Unmap the device identifier from the HW Load Status
     this->deviceIDToHwStatus.erase(deviceID);
+
+    // Unmap the PID from the device identifier
+    this->pidToDeviceID.erase(processId);
 
     // Adjust the HW load statuses property
     this->hw_load_statuses.clear();
@@ -185,49 +192,6 @@ void RFNoC_ProgrammableDevice_i::releaseObject() throw (CF::LifeCycle::ReleaseEr
     }
 
     RFNoC_ProgrammableDevice_prog_base_type::releaseObject();
-}
-
-bool RFNoC_ProgrammableDevice_i::connectRadioRX(const CORBA::ULong &portHash, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
-
-    if (not this->radioChainGraph.get()) {
-        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Unable to connect radio without graph");
-        return false;
-    }
-
-    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Checking output port for hash " << portHash << " to connecto radio chain to " << blockToConnect.to_string());
-
-    bulkio::OutShortPort::ConnectionsList connections = this->dataShort_out->getConnections();
-
-    for (size_t i = 0; i < connections.size(); ++i) {
-        CORBA::ULong providesHash = connections[i].first->_hash(1024);
-
-        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Checking hash " << providesHash);
-
-        if (providesHash == portHash) {
-            LOG_INFO(RFNoC_ProgrammableDevice_i, "Found correct connection, retrieving DDC information");
-            std::string connectionID = connections[i].second;
-
-            std::map<std::string, RxObject *>::iterator it = this->allocationIDToRx.find(connectionID);
-
-            if (it == this->allocationIDToRx.end()) {
-                LOG_WARN(RFNoC_ProgrammableDevice_i, "Unable to find RX object for allocation/connection ID: " << connectionID);
-                continue;
-            }
-
-            uhd::rfnoc::ddc_block_ctrl::sptr ddc = it->second->ddc;
-            size_t ddcPort = it->second->ddcPort;
-
-            this->radioChainGraph->connect(ddc->get_block_id(), ddcPort, blockToConnect, blockPort);
-
-            return true;
-        }
-    }
-
-    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "No connection possible");
-
-    return false;
 }
 
 bool RFNoC_ProgrammableDevice_i::connectRadioTX(const std::string &allocationID, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort)
@@ -278,13 +242,13 @@ Device_impl* RFNoC_ProgrammableDevice_i::generatePersona(int argc, char* argv[],
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
-    connectRadioRXCallback connectionRadioRXCb = boost::bind(&RFNoC_ProgrammableDevice_i::connectRadioRX, this, _1, _2, _3);
     connectRadioTXCallback connectionRadioTXCb = boost::bind(&RFNoC_ProgrammableDevice_i::connectRadioTX, this, _1, _2, _3);
     getUsrpCallback getUsrpCb = boost::bind(&RFNoC_ProgrammableDevice_i::getUsrp, this);
     hwLoadStatusCallback hwLoadStatusCb = boost::bind(&RFNoC_ProgrammableDevice_i::setHwLoadStatus, this, _1, _2);
+    setGetBlockInfoFromHashCallback setGetBlockInfoFromHashCb = boost::bind(&RFNoC_ProgrammableDevice_i::setGetBlockInfoFromHash, this, _1, _2);
 
     // Generate the Persona Device
-    Device_impl *persona = personaEntryPoint(argc, argv, this, connectionRadioRXCb, connectionRadioTXCb, getUsrpCb, hwLoadStatusCb);
+    Device_impl *persona = personaEntryPoint(argc, argv, this, connectionRadioTXCb, getUsrpCb, hwLoadStatusCb, setGetBlockInfoFromHashCb);
 
     // Something went wrong
     if (not persona) {
@@ -345,6 +309,9 @@ bool RFNoC_ProgrammableDevice_i::loadHardware(HwLoadStatusStruct& requestStatus)
     // Attempt to get the radios, DDCs, and DUCs
     initializeRadioChain();
 
+    // Set the active device ID
+    this->activeDeviceID = requestStatus.requester_id;
+
     return true;
 }
 
@@ -389,6 +356,9 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
             LOG_ERROR(RFNoC_ProgrammableDevice_i, "A problem occurred while unlinking the default bitfile symbolic link");
         }
     }
+
+    // Clear the active device ID
+    this->activeDeviceID.clear();
 }
 
 bool RFNoC_ProgrammableDevice_i::hwLoadRequestIsValid(const HwLoadRequestStruct& hwLoadRequestStruct)
@@ -630,6 +600,79 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
     }
 }
 
+void RFNoC_ProgrammableDevice_i::connectionAdded(const char *connectionID)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "New connection with ID: " << connectionID);
+
+    if (this->activeDeviceID.empty()) {
+        LOG_WARN(RFNoC_ProgrammableDevice_i, "No active persona, unable to provide output");
+    }
+
+    std::map<std::string, RxObject *>::iterator it = this->allocationIDToRx.find(connectionID);
+
+    if (it == this->allocationIDToRx.end()) {
+        LOG_WARN(RFNoC_ProgrammableDevice_i, "Unable to find RX object for allocation/connection ID: " << connectionID);
+        return;
+    }
+
+    bulkio::OutShortPort::ConnectionsList connections = this->dataShort_out->getConnections();
+
+    for (size_t i = 0; i < connections.size(); ++i) {
+        if (connections[i].second == connectionID) {
+            CORBA::ULong providesHash = connections[i].first->_hash(1024);
+
+            LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Found connection ID with provides hash: " << providesHash);
+
+            BlockInfo blockInfo = this->deviceIDToGetBlockInfo[this->activeDeviceID](providesHash);
+
+            if (not uhd::rfnoc::block_id_t::is_valid_block_id(blockInfo.blockID)) {
+                LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Persona does not recognize this hash, starting a stream thread");
+
+                size_t tunerID = getTunerMapping(connectionID);
+
+                retrieveRxStream(tunerID);
+
+                if (this->_started) {
+                    startRxStream(tunerID);
+                }
+
+                break;
+            } else {
+                uhd::rfnoc::block_id_t blockToConnect = blockInfo.blockID;
+                size_t blockPort = blockInfo.port;
+                uhd::rfnoc::ddc_block_ctrl::sptr ddc = it->second->ddc;
+                size_t ddcPort = it->second->ddcPort;
+
+                this->radioChainGraph->connect(ddc->get_block_id(), ddcPort, blockToConnect, blockPort);
+            }
+        }
+    }
+}
+
+void RFNoC_ProgrammableDevice_i::connectionRemoved(const char *connectionID)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Removed connection with ID: " << connectionID);
+
+    std::map<std::string, RxObject *>::iterator it = this->allocationIDToRx.find(connectionID);
+
+    if (it == this->allocationIDToRx.end()) {
+        LOG_WARN(RFNoC_ProgrammableDevice_i, "Unable to find RX object for allocation/connection ID: " << connectionID);
+        return;
+    }
+
+    if (it->second->rxStream.get()) {
+        size_t tunerID = getTunerMapping(connectionID);
+
+        stopRxStream(tunerID);
+
+        it->second->rxStream.reset();
+    }
+}
+
 void RFNoC_ProgrammableDevice_i::desiredRxChannelsChanged(const unsigned char &oldValue, const unsigned char &newValue)
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
@@ -772,6 +815,13 @@ int RFNoC_ProgrammableDevice_i::txServiceFunction(size_t streamIndex)
     }
 
     return NORMAL;
+}
+
+void RFNoC_ProgrammableDevice_i::setGetBlockInfoFromHash(const std::string &deviceID, getBlockInfoFromHashCallback getBlockInfoFromHashCb)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    this->deviceIDToGetBlockInfo[deviceID] = getBlockInfoFromHashCb;
 }
 
 /*************************************************************
