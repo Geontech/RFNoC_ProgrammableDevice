@@ -979,6 +979,10 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
 
         this->dataShort_out->pushSRI(this->tunerIDToRx[tuner_id]->sri);
 
+        std::vector<short> empty;
+
+        this->dataShort_out->pushPacket(empty, bulkio::time::utils::now(), false, stream_id);
+
         // Mark this radio as used
         this->tunerIDToRx[tuner_id]->used = true;
     } else if (request.tuner_type == "TX") {
