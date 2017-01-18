@@ -7,8 +7,14 @@
 #include <uhd/device3.hpp>
 #include <uhd/rfnoc/block_id.hpp>
 
+#include "RFNoC_Utils.h"
+
 typedef boost::function<bool(const CORBA::ULong &portHash, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort)> connectRadioRXCallback;
+
 typedef boost::function<bool(const std::string &allocationID, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort)> connectRadioTXCallback;
+
+typedef boost::function<BlockInfo(const CORBA::ULong &portHash)> getBlockInfoFromHashCallback;
+
 typedef boost::function<uhd::device3::sptr()> getUsrpCallback;
 
 struct hw_load_status_object {
@@ -20,5 +26,7 @@ struct hw_load_status_object {
 };
 
 typedef boost::function<void(const std::string &deviceID, const hw_load_status_object &hwLoadStatus)> hwLoadStatusCallback;
+
+typedef boost::function<void(const std::string &deviceID, getBlockInfoFromHashCallback getBlockFromHashCb)> setGetBlockInfoFromHashCallback;
 
 #endif

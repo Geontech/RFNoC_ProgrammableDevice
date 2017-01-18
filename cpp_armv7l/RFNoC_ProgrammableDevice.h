@@ -68,6 +68,7 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
 
         void releaseObject() throw (CF::LifeCycle::ReleaseError, CORBA::SystemException);
 
+        bool connectRadioRX(const CORBA::ULong &portHash, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort);
         bool connectRadioTX(const std::string &allocationID, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort);
         uhd::device3::sptr getUsrp() { return this->usrp; }
         void setHwLoadStatus(const std::string &deviceID, const hw_load_status_object &hwLoadStatus);

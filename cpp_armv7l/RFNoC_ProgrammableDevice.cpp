@@ -194,6 +194,49 @@ void RFNoC_ProgrammableDevice_i::releaseObject() throw (CF::LifeCycle::ReleaseEr
     RFNoC_ProgrammableDevice_prog_base_type::releaseObject();
 }
 
+bool RFNoC_ProgrammableDevice_i::connectRadioRX(const CORBA::ULong &portHash, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    if (not this->radioChainGraph.get()) {
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Unable to connect radio without graph");
+        return false;
+    }
+
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Checking output port for hash " << portHash << " to connecto radio chain to " << blockToConnect.to_string());
+
+    bulkio::OutShortPort::ConnectionsList connections = this->dataShort_out->getConnections();
+
+    for (size_t i = 0; i < connections.size(); ++i) {
+        CORBA::ULong providesHash = connections[i].first->_hash(1024);
+
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Checking hash " << providesHash);
+
+        if (providesHash == portHash) {
+            LOG_INFO(RFNoC_ProgrammableDevice_i, "Found correct connection, retrieving DDC information");
+            std::string connectionID = connections[i].second;
+
+            std::map<std::string, RxObject *>::iterator it = this->allocationIDToRx.find(connectionID);
+
+            if (it == this->allocationIDToRx.end()) {
+                LOG_WARN(RFNoC_ProgrammableDevice_i, "Unable to find RX object for allocation/connection ID: " << connectionID);
+                continue;
+            }
+
+            uhd::rfnoc::ddc_block_ctrl::sptr ddc = it->second->ddc;
+            size_t ddcPort = it->second->ddcPort;
+
+            this->radioChainGraph->connect(ddc->get_block_id(), ddcPort, blockToConnect, blockPort);
+
+            return true;
+        }
+    }
+
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "No connection possible");
+
+    return false;
+}
+
 bool RFNoC_ProgrammableDevice_i::connectRadioTX(const std::string &allocationID, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort)
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
@@ -242,13 +285,14 @@ Device_impl* RFNoC_ProgrammableDevice_i::generatePersona(int argc, char* argv[],
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
-    connectRadioTXCallback connectionRadioTXCb = boost::bind(&RFNoC_ProgrammableDevice_i::connectRadioTX, this, _1, _2, _3);
+    connectRadioRXCallback connectRadioRXCb = boost::bind(&RFNoC_ProgrammableDevice_i::connectRadioRX, this, _1, _2, _3);
+    connectRadioTXCallback connectRadioTXCb = boost::bind(&RFNoC_ProgrammableDevice_i::connectRadioTX, this, _1, _2, _3);
     getUsrpCallback getUsrpCb = boost::bind(&RFNoC_ProgrammableDevice_i::getUsrp, this);
     hwLoadStatusCallback hwLoadStatusCb = boost::bind(&RFNoC_ProgrammableDevice_i::setHwLoadStatus, this, _1, _2);
     setGetBlockInfoFromHashCallback setGetBlockInfoFromHashCb = boost::bind(&RFNoC_ProgrammableDevice_i::setGetBlockInfoFromHash, this, _1, _2);
 
     // Generate the Persona Device
-    Device_impl *persona = personaEntryPoint(argc, argv, this, connectionRadioTXCb, getUsrpCb, hwLoadStatusCb, setGetBlockInfoFromHashCb);
+    Device_impl *persona = personaEntryPoint(argc, argv, this, connectRadioRXCb, connectRadioTXCb, getUsrpCb, hwLoadStatusCb, setGetBlockInfoFromHashCb);
 
     // Something went wrong
     if (not persona) {

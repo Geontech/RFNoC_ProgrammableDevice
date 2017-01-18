@@ -9,6 +9,8 @@
 
 #include "RFNoC_Utils.h"
 
+typedef boost::function<bool(const CORBA::ULong &portHash, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort)> connectRadioRXCallback;
+
 typedef boost::function<bool(const std::string &allocationID, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort)> connectRadioTXCallback;
 
 typedef boost::function<BlockInfo(const CORBA::ULong &portHash)> getBlockInfoFromHashCallback;
