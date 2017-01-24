@@ -696,6 +696,8 @@ void RFNoC_ProgrammableDevice_i::connectionAdded(const char *connectionID)
                 this->radioChainGraph->connect(ddc->get_block_id(), ddcPort, blockToConnect, blockPort);
 
                 it->second->connected = true;
+
+                this->dataShort_out->pushSRI(it->second->sri);
             }
         }
     }
@@ -1076,14 +1078,6 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
 
         // Push SRI
         this->tunerIDToRx[tuner_id]->sri = create(stream_id, fts);
-
-        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Pushed SRI");
-
-        this->dataShort_out->pushSRI(this->tunerIDToRx[tuner_id]->sri);
-
-        std::vector<short> empty;
-
-        this->dataShort_out->pushPacket(empty, bulkio::time::utils::now(), false, stream_id);
 
         // Mark this radio as used
         this->tunerIDToRx[tuner_id]->used = true;
