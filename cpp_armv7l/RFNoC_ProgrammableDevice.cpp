@@ -682,11 +682,15 @@ void RFNoC_ProgrammableDevice_i::connectionAdded(const char *connectionID)
 
                 retrieveRxStream(tunerID);
 
+                it->second->output.resize(10*it->second->spp);
+
+                it->second->rxThread = new GenericThreadedComponent(boost::bind(&RFNoC_ProgrammableDevice_i::rxServiceFunction, this, tunerID));
+
                 if (this->_started) {
                     startRxStream(tunerID);
-                }
 
-                break;
+                    it->second->rxThread->start();
+                }
             } else {
                 uhd::rfnoc::block_id_t blockToConnect = blockInfo.blockID;
                 size_t blockPort = blockInfo.port;
@@ -699,6 +703,8 @@ void RFNoC_ProgrammableDevice_i::connectionAdded(const char *connectionID)
 
                 this->dataShort_out->pushSRI(it->second->sri);
             }
+
+            break;
         }
     }
 }
@@ -719,9 +725,16 @@ void RFNoC_ProgrammableDevice_i::connectionRemoved(const char *connectionID)
     if (it->second->rxStream.get()) {
         size_t tunerID = getTunerMapping(connectionID);
 
+        if (not it->second->rxThread->stop()) {
+            LOG_WARN(RFNoC_ProgrammableDevice_i, "RX Thread had to be killed");
+        }
+
         stopRxStream(tunerID);
 
         it->second->rxStream.reset();
+
+        delete it->second->rxThread;
+        it->second->rxThread = NULL;
     } else {
         it->second->connected = false;
     }
