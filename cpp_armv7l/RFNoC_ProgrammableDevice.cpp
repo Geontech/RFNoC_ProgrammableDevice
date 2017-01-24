@@ -221,6 +221,9 @@ bool RFNoC_ProgrammableDevice_i::connectRadioRX(const CORBA::ULong &portHash, co
             if (it == this->allocationIDToRx.end()) {
                 LOG_WARN(RFNoC_ProgrammableDevice_i, "Unable to find RX object for allocation/connection ID: " << connectionID);
                 continue;
+            } else if (it->second->connected) {
+                LOG_DEBUG(RFNoC_ProgrammableDevice_i, "RX object already connected for allocation/connection ID: " << connectionID);
+                break;
             }
 
             uhd::rfnoc::ddc_block_ctrl::sptr ddc = it->second->ddc;
