@@ -520,6 +520,7 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
     for (size_t i = 0; i < numDdcChannels; ++i) {
         this->tunerIDToRx[tunerID] = new RxObject;
 
+        this->tunerIDToRx[tunerID]->connected = false;
         this->tunerIDToRx[tunerID]->rxThread = NULL;
         this->tunerIDToRx[tunerID]->streamStarted = false;
         this->tunerIDToRx[tunerID]->updateSRI = false;
@@ -690,6 +691,8 @@ void RFNoC_ProgrammableDevice_i::connectionAdded(const char *connectionID)
                 size_t ddcPort = it->second->ddcPort;
 
                 this->radioChainGraph->connect(ddc->get_block_id(), ddcPort, blockToConnect, blockPort);
+
+                it->second->connected = true;
             }
         }
     }
@@ -714,6 +717,8 @@ void RFNoC_ProgrammableDevice_i::connectionRemoved(const char *connectionID)
         stopRxStream(tunerID);
 
         it->second->rxStream.reset();
+    } else {
+        it->second->connected = false;
     }
 }
 

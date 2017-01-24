@@ -18,6 +18,7 @@ typedef RFNoC_ProgrammableDevice_prog_base<hw_load_request_struct_struct, hw_loa
 
 // Objects necessary for data flow
 struct RxObject {
+    bool connected;
     uhd::rfnoc::ddc_block_ctrl::sptr ddc;
     size_t ddcPort;
     std::vector<std::complex<short> > output;
