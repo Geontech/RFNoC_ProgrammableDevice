@@ -223,7 +223,7 @@ bool RFNoC_ProgrammableDevice_i::connectRadioRX(const CORBA::ULong &portHash, co
                 continue;
             } else if (it->second->connected) {
                 LOG_DEBUG(RFNoC_ProgrammableDevice_i, "RX object already connected for allocation/connection ID: " << connectionID);
-                break;
+                return true;
             }
 
             uhd::rfnoc::ddc_block_ctrl::sptr ddc = it->second->ddc;
