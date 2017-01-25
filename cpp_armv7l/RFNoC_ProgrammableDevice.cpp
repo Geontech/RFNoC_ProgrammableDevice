@@ -111,6 +111,9 @@ void RFNoC_ProgrammableDevice_i::constructor()
 
     // Set the usage state to IDLE
     setUsageState(CF::Device::IDLE);
+
+    // Start the Device
+    start();
 }
 
 CF::ExecutableDevice::ProcessID_Type RFNoC_ProgrammableDevice_i::execute (const char* name, const CF::Properties& options, const CF::Properties& parameters)
@@ -780,6 +783,8 @@ int RFNoC_ProgrammableDevice_i::rxServiceFunction(size_t streamIndex)
 
         // Push SRI if necessary
         if (this->tunerIDToRx[streamIndex]->updateSRI) {
+            LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Pushing SRI");
+
             this->dataShort_out->pushSRI(sri);
 
             this->tunerIDToRx[streamIndex]->updateSRI = false;
@@ -1152,7 +1157,7 @@ bool RFNoC_ProgrammableDevice_i::deviceDeleteTuning(
         this->allocationIDToTx.erase(txIt);
     }
 
-    // Clear the used, flag
+    // Clear the objects
     if (this->tunerIDToRx.find(tuner_id) != this->tunerIDToRx.end()) {
         this->tunerIDToRx[tuner_id]->used = false;
     } else if (this->tunerIDToTx.find(tuner_id) != this->tunerIDToTx.end()) {
