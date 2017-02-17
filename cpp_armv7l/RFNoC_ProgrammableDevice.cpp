@@ -1087,7 +1087,18 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
         }
 
         // Get the actual output rate of the DDC
-        sampleRate = ddc->get_output_samp_rate(ddcPort);
+        //sampleRate = ddc->get_output_samp_rate(ddcPort);
+
+        try {
+            std::string sampleRateString;
+
+            sampleRateString = ddc->get_arg("output_rate", ddcPort);
+
+            sampleRate = boost::lexical_cast<double>(sampleRateString);
+        } catch(...) {
+            LOG_ERROR(RFNoC_ProgrammableDevice_i, "Error occurred while getting output rate on DDC RF-NoC block");
+            return false;
+        }
 
         // creates a stream id if not already created for this tuner
         std::string stream_id = getStreamId(tuner_id);
