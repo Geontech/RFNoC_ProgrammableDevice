@@ -1059,7 +1059,9 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
     // Set the frontend tuner status
     fts.bandwidth = 16e6;
     fts.center_frequency = actualCF;
-    fts.sample_rate = request.sample_rate;
+
+    // Set the sample rate
+    double sampleRate;
 
     // Map the allocation ID to the flow object
     if (request.tuner_type == "RX_DIGITIZER") {
@@ -1072,7 +1074,7 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
 
         args["freq"] = "0.0";
         args["input_rate"] = boost::lexical_cast<std::string>(this->radio->get_output_samp_rate(radioChannel));
-        args["output_rate"] = boost::lexical_cast<std::string>(fts.sample_rate);
+        args["output_rate"] = boost::lexical_cast<std::string>(request.sample_rate);
 
         try {
             ddc->set_args(args, ddcPort);
@@ -1083,6 +1085,9 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
             LOG_ERROR(RFNoC_ProgrammableDevice_i, "Unknown error occurred while setting rates on DDC RF-NoC block");
             return false;
         }
+
+        // Get the actual output rate of the DDC
+        sampleRate = ddc->get_output_samp_rate(ddcPort);
 
         // creates a stream id if not already created for this tuner
         std::string stream_id = getStreamId(tuner_id);
@@ -1108,7 +1113,7 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
         uhd::device_addr_t args;
 
         args["freq"] = boost::lexical_cast<std::string>(fts.center_frequency);
-        args["input_rate"] = boost::lexical_cast<std::string>(fts.sample_rate);
+        args["input_rate"] = boost::lexical_cast<std::string>(request.sample_rate);
         args["output_rate"] = boost::lexical_cast<std::string>(this->radio->get_input_samp_rate(radioChannel));
 
         try {
@@ -1121,9 +1126,15 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
             return false;
         }
 
+        // Get the actual input rate of the DUC
+        sampleRate = duc->get_input_samp_rate(ducPort);
+
         // Mark this radio as used
         this->tunerIDToTx[tuner_id]->used = true;
     }
+
+    // Set the sample rate on the fts object
+    fts.sample_rate = sampleRate;
 
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Allocation succeeded on: " << this->radio->get_block_id().to_string() << ":" << radioChannel);
 
