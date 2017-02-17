@@ -1059,7 +1059,7 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
     // Set the frontend tuner status
     fts.bandwidth = 16e6;
     fts.center_frequency = actualCF;
-    fts.sample_rate = 16e6;
+    fts.sample_rate = request.sample_rate;
 
     // Map the allocation ID to the flow object
     if (request.tuner_type == "RX_DIGITIZER") {
