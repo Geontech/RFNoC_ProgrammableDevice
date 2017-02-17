@@ -1009,8 +1009,8 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
         return false;
     }
 
-    if (not frontend::validateRequest(16e6, 16e6, request.sample_rate)) {
-        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Failed to set tuning: Sample rate doesn't match 16 MSps");
+    if (not frontend::validateRequest(125e3, 16e6, request.sample_rate)) {
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Failed to set tuning: Sample rate doesn't fall between 125 kSps and 16 MSps");
         return false;
     }
 
