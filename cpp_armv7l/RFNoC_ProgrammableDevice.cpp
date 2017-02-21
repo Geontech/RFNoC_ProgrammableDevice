@@ -211,7 +211,7 @@ bool RFNoC_ProgrammableDevice_i::connectRadioRX(const CORBA::ULong &portHash, co
     bulkio::OutShortPort::ConnectionsList connections = this->dataShort_out->getConnections();
 
     for (size_t i = 0; i < connections.size(); ++i) {
-        CORBA::ULong providesHash = connections[i].first->_hash(1024);
+        CORBA::ULong providesHash = connections[i].first->_hash(HASH_SIZE);
 
         LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Checking hash " << providesHash);
 
@@ -672,7 +672,7 @@ void RFNoC_ProgrammableDevice_i::connectionAdded(const char *connectionID)
 
     for (size_t i = 0; i < connections.size(); ++i) {
         if (connections[i].second == connectionID) {
-            CORBA::ULong providesHash = connections[i].first->_hash(1024);
+            CORBA::ULong providesHash = connections[i].first->_hash(HASH_SIZE);
 
             LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Found connection ID with provides hash: " << providesHash);
 

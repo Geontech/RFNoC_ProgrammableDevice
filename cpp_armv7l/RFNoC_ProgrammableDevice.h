@@ -16,6 +16,9 @@ typedef RFNoC_ProgrammableDevice_prog_base<hw_load_request_struct_struct, hw_loa
 #include "GenericThreadedComponent.h"
 #include "RFNoC_Persona.h"
 
+// The size of the port hashes
+const CORBA::ULong HASH_SIZE = 1000000;
+
 // Objects necessary for data flow
 struct RxObject {
     bool connected;
