@@ -458,6 +458,11 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
     // Create the RF-NoC graph
     this->radioChainGraph = this->usrp->create_graph("radioChainGraph");
 
+    if (not this->radioChainGraph.get()) {
+        LOG_ERROR(RFNoC_ProgrammableDevice_i, "Failed to get the radio chain graph");
+        return;
+    }
+
     // Grab the radio blocks
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Getting radio block");
     this->radio = this->usrp->get_block_ctrl<uhd::rfnoc::radio_ctrl>(uhd::rfnoc::block_id_t("Radio"));
