@@ -472,6 +472,9 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
         return;
     }
 
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Printing radio block id");
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, this->radio->get_block_id());
+
     // Grab the DDC blocks
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Searching for DDC blocks");
     std::vector<uhd::rfnoc::block_id_t> ddcBlockIDs = this->usrp->find_blocks("DDC");
