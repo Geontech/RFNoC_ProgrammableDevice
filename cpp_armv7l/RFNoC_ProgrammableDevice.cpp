@@ -555,6 +555,12 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
     } else if (numDdcChannels == 1) {
         LOG_INFO(RFNoC_ProgrammableDevice_i, "Only one DDC channel available, RX possible on one channel only")
 
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "Printing radio block id");
+        LOG_INFO(RFNoC_ProgrammableDevice_i, this->radio->get_block_id());
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "Print DDC block id");
+        LOG_INFO(RFNoC_ProgrammableDevice_i, tmpDdcs[0]->get_block_id());
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "Calling connect on graph");
+
         this->radioChainGraph->connect(this->radio->get_block_id(), 0, tmpDdcs[0]->get_block_id(), 0);
         LOG_INFO(RFNoC_ProgrammableDevice_i, "A");
 
