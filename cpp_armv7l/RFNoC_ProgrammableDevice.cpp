@@ -464,6 +464,17 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
     }
 
     // Grab the radio blocks
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Getting radio block as generic");
+    uhd::rfnoc::block_ctrl_base::sptr genericRadio = this->usrp->get_block_ctrl<uhd::rfnoc::block_ctrl_base>(uhd::rfnoc::block_id_t("Radio"));
+
+    if (not genericRadio.get()) {
+        LOG_ERROR(RFNoC_ProgrammableDevice_i, "Unable to get generic radio block for this hardware load");
+        return;
+    }
+
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Printing generic radio block id");
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, genericRadio->get_block_id());
+
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Getting radio block");
     this->radio = this->usrp->get_block_ctrl<uhd::rfnoc::radio_ctrl>(uhd::rfnoc::block_id_t("Radio"));
 
