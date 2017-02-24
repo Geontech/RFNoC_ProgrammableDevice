@@ -551,10 +551,12 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
         LOG_INFO(RFNoC_ProgrammableDevice_i, "Only one DDC channel available, RX possible on one channel only")
 
         this->radioChainGraph->connect(this->radio->get_block_id(), 0, tmpDdcs[0]->get_block_id(), 0);
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "A");
 
         tunerIDToRx[0]->ddc = tmpDdcs[0];
         tunerIDToRx[0]->ddcPort = 0;
         tunerIDToRx[0]->radioChannel = 0;
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "B");
     } else {
         LOG_INFO(RFNoC_ProgrammableDevice_i, "Sufficient DDCs for RX on all radios");
 
@@ -582,6 +584,8 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
             tunerIDToRx[1]->radioChannel = 1;
         }
     }
+
+    LOG_INFO(RFNoC_ProgrammableDevice_i, "C");
 
     if (numDucChannels == 0) {
         LOG_INFO(RFNoC_ProgrammableDevice_i, "No DUCs available, TX not possible");
