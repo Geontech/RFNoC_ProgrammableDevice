@@ -472,8 +472,8 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
         return;
     }
 
-    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Printing generic radio block id");
-    LOG_DEBUG(RFNoC_ProgrammableDevice_i, genericRadio->get_block_id());
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Getting anything else from the shared pointer");
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, genericRadio->get_address());
 
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Getting radio block");
     this->radio = this->usrp->get_block_ctrl<uhd::rfnoc::radio_ctrl>(uhd::rfnoc::block_id_t("Radio"));
