@@ -464,27 +464,18 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
     }
 
     // Grab the radio blocks
-    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Getting radio block as generic");
-    uhd::rfnoc::block_ctrl_base::sptr genericRadio = this->usrp->get_block_ctrl<uhd::rfnoc::block_ctrl_base>(uhd::rfnoc::block_id_t("Radio"));
-
-    if (not genericRadio.get()) {
-        LOG_ERROR(RFNoC_ProgrammableDevice_i, "Unable to get generic radio block for this hardware load");
-        return;
-    }
-
-    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Getting anything else from the shared pointer");
-    LOG_DEBUG(RFNoC_ProgrammableDevice_i, genericRadio->get_address());
-
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Getting radio block");
     this->radio = this->usrp->get_block_ctrl<uhd::rfnoc::radio_ctrl>(uhd::rfnoc::block_id_t("Radio"));
+
+    uhd::rfnoc::block_id_t();
 
     if (not this->radio.get()) {
         LOG_ERROR(RFNoC_ProgrammableDevice_i, "Unable to get the Radio block for this hardware load");
         return;
     }
 
-    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Printing radio block id");
-    LOG_DEBUG(RFNoC_ProgrammableDevice_i, this->radio->get_block_id());
+    LOG_INFO(RFNoC_ProgrammableDevice_i, "Printing unique id");
+    LOG_INFO(RFNoC_ProgrammableDevice_i, this->radio->unique_id());
 
     // Grab the DDC blocks
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Searching for DDC blocks");
