@@ -232,7 +232,7 @@ bool RFNoC_ProgrammableDevice_i::connectRadioRX(const CORBA::ULong &portHash, co
             uhd::rfnoc::ddc_block_ctrl::sptr ddc = it->second->ddc;
             size_t ddcPort = it->second->ddcPort;
 
-            this->radioChainGraph->connect(ddc->get_block_id(), ddcPort, blockToConnect, blockPort);
+            this->radioChainGraph->connect(ddc->unique_id(), ddcPort, blockToConnect, blockPort);
 
             return true;
         }
@@ -262,7 +262,7 @@ bool RFNoC_ProgrammableDevice_i::connectRadioTX(const std::string &allocationID,
     uhd::rfnoc::duc_block_ctrl::sptr duc = it->second->duc;
     size_t ducPort = it->second->ducPort;
 
-    this->radioChainGraph->connect(blockToConnect, blockPort, duc->get_block_id(), ducPort);
+    this->radioChainGraph->connect(blockToConnect, blockPort, duc->unique_id(), ducPort);
 
     return true;
 }
@@ -474,9 +474,6 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
         return;
     }
 
-    LOG_INFO(RFNoC_ProgrammableDevice_i, "Printing unique id");
-    LOG_INFO(RFNoC_ProgrammableDevice_i, this->radio->unique_id());
-
     // Grab the DDC blocks
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Searching for DDC blocks");
     std::vector<uhd::rfnoc::block_id_t> ddcBlockIDs = this->usrp->find_blocks("DDC");
@@ -558,27 +555,19 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
     if (numDdcChannels == 0) {
         LOG_INFO(RFNoC_ProgrammableDevice_i, "No DDCs available, RX not possible");
     } else if (numDdcChannels == 1) {
-        LOG_INFO(RFNoC_ProgrammableDevice_i, "Only one DDC channel available, RX possible on one channel only")
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "Only one DDC channel available, RX possible on one channel only");
 
-        LOG_INFO(RFNoC_ProgrammableDevice_i, "Printing radio block id");
-        LOG_INFO(RFNoC_ProgrammableDevice_i, this->radio->get_block_id());
-        LOG_INFO(RFNoC_ProgrammableDevice_i, "Print DDC block id");
-        LOG_INFO(RFNoC_ProgrammableDevice_i, tmpDdcs[0]->get_block_id());
-        LOG_INFO(RFNoC_ProgrammableDevice_i, "Calling connect on graph");
-
-        this->radioChainGraph->connect(this->radio->get_block_id(), 0, tmpDdcs[0]->get_block_id(), 0);
-        LOG_INFO(RFNoC_ProgrammableDevice_i, "A");
+        this->radioChainGraph->connect(this->radio->unique_id(), 0, tmpDdcs[0]->unique_id(), 0);
 
         tunerIDToRx[0]->ddc = tmpDdcs[0];
         tunerIDToRx[0]->ddcPort = 0;
         tunerIDToRx[0]->radioChannel = 0;
-        LOG_INFO(RFNoC_ProgrammableDevice_i, "B");
     } else {
         LOG_INFO(RFNoC_ProgrammableDevice_i, "Sufficient DDCs for RX on all radios");
 
         if (tmpDdcs.size() == 1) {
-            this->radioChainGraph->connect(this->radio->get_block_id(), 0, tmpDdcs[0]->get_block_id(), 0);
-            this->radioChainGraph->connect(this->radio->get_block_id(), 1, tmpDdcs[0]->get_block_id(), 1);
+            this->radioChainGraph->connect(this->radio->unique_id(), 0, tmpDdcs[0]->unique_id(), 0);
+            this->radioChainGraph->connect(this->radio->unique_id(), 1, tmpDdcs[0]->unique_id(), 1);
 
             tunerIDToRx[0]->ddc = tmpDdcs[0];
             tunerIDToRx[0]->ddcPort = 0;
@@ -588,8 +577,8 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
             tunerIDToRx[1]->ddcPort = 1;
             tunerIDToRx[1]->radioChannel = 1;
         } else {
-            this->radioChainGraph->connect(this->radio->get_block_id(), 0, tmpDdcs[0]->get_block_id(), 0);
-            this->radioChainGraph->connect(this->radio->get_block_id(), 1, tmpDdcs[1]->get_block_id(), 0);
+            this->radioChainGraph->connect(this->radio->unique_id(), 0, tmpDdcs[0]->unique_id(), 0);
+            this->radioChainGraph->connect(this->radio->unique_id(), 1, tmpDdcs[1]->unique_id(), 0);
 
             tunerIDToRx[0]->ddc = tmpDdcs[0];
             tunerIDToRx[0]->ddcPort = 0;
@@ -601,14 +590,12 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
         }
     }
 
-    LOG_INFO(RFNoC_ProgrammableDevice_i, "C");
-
     if (numDucChannels == 0) {
         LOG_INFO(RFNoC_ProgrammableDevice_i, "No DUCs available, TX not possible");
     } else if (numDucChannels == 1) {
         LOG_INFO(RFNoC_ProgrammableDevice_i, "Only one DUC channel available, TX possible on one channel only")
 
-        this->radioChainGraph->connect(tmpDucs[0]->get_block_id(), 0, this->radio->get_block_id(), 0);
+        this->radioChainGraph->connect(tmpDucs[0]->unique_id(), 0, this->radio->unique_id(), 0);
 
         tunerIDToTx[numDdcChannels]->duc = tmpDucs[0];
         tunerIDToTx[numDdcChannels]->ducPort = 0;
@@ -617,8 +604,8 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
         LOG_INFO(RFNoC_ProgrammableDevice_i, "Sufficient DUCs for TX on all radios");
 
         if (tmpDucs.size() == 1) {
-            this->radioChainGraph->connect(tmpDucs[0]->get_block_id(), 0, this->radio->get_block_id(), 0);
-            this->radioChainGraph->connect(tmpDucs[0]->get_block_id(), 1, this->radio->get_block_id(), 1);
+            this->radioChainGraph->connect(tmpDucs[0]->unique_id(), 0, this->radio->unique_id(), 0);
+            this->radioChainGraph->connect(tmpDucs[0]->unique_id(), 1, this->radio->unique_id(), 1);
 
             tunerIDToTx[numDdcChannels]->duc = tmpDucs[0];
             tunerIDToTx[numDdcChannels]->ducPort = 0;
@@ -628,8 +615,8 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
             tunerIDToTx[numDdcChannels + 1]->ducPort = 1;
             tunerIDToTx[numDdcChannels + 1]->radioChannel = 1;
         } else {
-            this->radioChainGraph->connect(tmpDucs[0]->get_block_id(), 0, this->radio->get_block_id(), 0);
-            this->radioChainGraph->connect(tmpDucs[1]->get_block_id(), 0, this->radio->get_block_id(), 1);
+            this->radioChainGraph->connect(tmpDucs[0]->unique_id(), 0, this->radio->unique_id(), 0);
+            this->radioChainGraph->connect(tmpDucs[1]->unique_id(), 0, this->radio->unique_id(), 1);
 
             tunerIDToTx[numDdcChannels]->duc = tmpDucs[0];
             tunerIDToTx[numDdcChannels]->ducPort = 0;
@@ -720,7 +707,7 @@ void RFNoC_ProgrammableDevice_i::connectionAdded(const char *connectionID)
                 uhd::rfnoc::ddc_block_ctrl::sptr ddc = it->second->ddc;
                 size_t ddcPort = it->second->ddcPort;
 
-                this->radioChainGraph->connect(ddc->get_block_id(), ddcPort, blockToConnect, blockPort);
+                this->radioChainGraph->connect(ddc->unique_id(), ddcPort, blockToConnect, blockPort);
 
                 it->second->connected = true;
 
@@ -1167,7 +1154,7 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
     // Set the sample rate on the fts object
     fts.sample_rate = sampleRate;
 
-    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Allocation succeeded on: " << this->radio->get_block_id().to_string() << ":" << radioChannel);
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Allocation succeeded on: " << this->radio->unique_id() << ":" << radioChannel);
 
     return true;
 }
@@ -1318,7 +1305,7 @@ void RFNoC_ProgrammableDevice_i::retrieveRxStream(size_t streamIndex)
     uhd::stream_args_t stream_args("sc16", "sc16");
     uhd::device_addr_t streamer_args;
 
-    streamer_args["block_id"] = ddc->get_block_id();
+    streamer_args["block_id"] = ddc->unique_id();
 
     // Get the spp from the block
     this->tunerIDToRx[streamIndex]->spp = ddc->get_args(ddcPort).cast<size_t>("spp", 1024);
@@ -1358,7 +1345,7 @@ void RFNoC_ProgrammableDevice_i::retrieveTxStream(size_t streamIndex)
     uhd::stream_args_t stream_args("sc16", "sc16");
     uhd::device_addr_t streamer_args;
 
-    streamer_args["block_id"] = duc->get_block_id();
+    streamer_args["block_id"] = duc->unique_id();
 
     // Get the spp from the block
     this->tunerIDToTx[streamIndex]->spp = duc->get_args(ducPort).cast<size_t>("spp", 1024);
