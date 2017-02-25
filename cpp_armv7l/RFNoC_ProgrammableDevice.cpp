@@ -206,7 +206,7 @@ bool RFNoC_ProgrammableDevice_i::connectRadioRX(const CORBA::ULong &portHash, co
         return false;
     }
 
-    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Checking output port for hash " << portHash << " to connecto radio chain to " << blockToConnect.to_string());
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Checking output port for hash " << portHash << " to connect radio chain to " << blockToConnect.to_string());
 
     bulkio::OutShortPort::ConnectionsList connections = this->dataShort_out->getConnections();
 
@@ -474,6 +474,10 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
         return;
     }
 
+    // Setting radio spp
+    this->radio->set_arg("spp", 512, 0);
+    this->radio->set_arg("spp", 512, 1);
+
     // Grab the DDC blocks
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Searching for DDC blocks");
     std::vector<uhd::rfnoc::block_id_t> ddcBlockIDs = this->usrp->find_blocks("DDC");
@@ -559,6 +563,8 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
 
         this->radioChainGraph->connect(this->radio->unique_id(), 0, tmpDdcs[0]->unique_id(), 0);
 
+        tmpDdcs[0]->set_arg("spp", 512, 0);
+
         tunerIDToRx[0]->ddc = tmpDdcs[0];
         tunerIDToRx[0]->ddcPort = 0;
         tunerIDToRx[0]->radioChannel = 0;
@@ -568,6 +574,9 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
         if (tmpDdcs.size() == 1) {
             this->radioChainGraph->connect(this->radio->unique_id(), 0, tmpDdcs[0]->unique_id(), 0);
             this->radioChainGraph->connect(this->radio->unique_id(), 1, tmpDdcs[0]->unique_id(), 1);
+
+            tmpDdcs[0]->set_arg("spp", 512, 0);
+            tmpDdcs[0]->set_arg("spp", 512, 1);
 
             tunerIDToRx[0]->ddc = tmpDdcs[0];
             tunerIDToRx[0]->ddcPort = 0;
@@ -579,6 +588,9 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
         } else {
             this->radioChainGraph->connect(this->radio->unique_id(), 0, tmpDdcs[0]->unique_id(), 0);
             this->radioChainGraph->connect(this->radio->unique_id(), 1, tmpDdcs[1]->unique_id(), 0);
+
+            tmpDdcs[0]->set_arg("spp", 512, 0);
+            tmpDdcs[1]->set_arg("spp", 512, 0);
 
             tunerIDToRx[0]->ddc = tmpDdcs[0];
             tunerIDToRx[0]->ddcPort = 0;
