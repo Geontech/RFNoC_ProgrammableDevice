@@ -375,28 +375,44 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
         this->radio->clear();
     }
 
+    LOG_INFO(RFNoC_ProgrammableDevice_i, "A");
+
     // Reset the radio pointer
     this->radio.reset();
+
+    LOG_INFO(RFNoC_ProgrammableDevice_i, "B");
 
     // Clear the USRP device
     if (this->usrp.get()) {
         this->usrp->clear();
     }
 
+    LOG_INFO(RFNoC_ProgrammableDevice_i, "C");
+
     // Reset the USRP pointer
     this->usrp.reset();
+
+    LOG_INFO(RFNoC_ProgrammableDevice_i, "D");
 
     // Clear the graph
     this->radioChainGraph.reset();
 
+    LOG_INFO(RFNoC_ProgrammableDevice_i, "E");
+
     // Clear the flows
     clearFlows();
+
+    LOG_INFO(RFNoC_ProgrammableDevice_i, "F");
 
     // Clear the frontend_tuner_status
     setNumChannels(0);
 
+    LOG_INFO(RFNoC_ProgrammableDevice_i, "G");
+
     // Load the idle bitfile
     loadBitfile(this->IDLE_BITFILE_PATH);
+
+    LOG_INFO(RFNoC_ProgrammableDevice_i, "H");
 
     // Remove the symbolic link, if necessary
     if (this->canUnlink) {
@@ -407,8 +423,12 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
         }
     }
 
+    LOG_INFO(RFNoC_ProgrammableDevice_i, "I");
+
     // Clear the active device ID
     this->activeDeviceID.clear();
+
+    LOG_INFO(RFNoC_ProgrammableDevice_i, "J");
 }
 
 bool RFNoC_ProgrammableDevice_i::hwLoadRequestIsValid(const HwLoadRequestStruct& hwLoadRequestStruct)
