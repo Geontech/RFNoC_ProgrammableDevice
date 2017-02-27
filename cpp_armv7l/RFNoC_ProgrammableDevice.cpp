@@ -494,10 +494,6 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
         return;
     }
 
-    // Setting radio spp
-    this->radio->set_arg("spp", 512, 0);
-    this->radio->set_arg("spp", 512, 1);
-
     // Grab the DDC blocks
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Searching for DDC blocks");
     std::vector<uhd::rfnoc::block_id_t> ddcBlockIDs = this->usrp->find_blocks("DDC");
@@ -583,7 +579,19 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
 
         this->radioChainGraph->connect(this->radio->unique_id(), 0, tmpDdcs[0]->unique_id(), 0);
 
-        tmpDdcs[0]->set_arg("spp", 512, 0);
+        // Setting radio spp
+        try {
+            this->radio->set_arg("spp", 512, 0);
+        } catch(...) {
+            LOG_WARN(RFNoC_ProgrammableDevice_i, "Failed to set spp on radio channel 0");
+        }
+
+        // Setting ddc spp
+        try {
+            tmpDdcs[0]->set_arg("spp", 512, 0);
+        } catch(...) {
+            LOG_WARN(RFNoC_ProgrammableDevice_i, "Failed to set spp on DDC");
+        }
 
         tunerIDToRx[0]->ddc = tmpDdcs[0];
         tunerIDToRx[0]->ddcPort = 0;
@@ -595,8 +603,31 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
             this->radioChainGraph->connect(this->radio->unique_id(), 0, tmpDdcs[0]->unique_id(), 0);
             this->radioChainGraph->connect(this->radio->unique_id(), 1, tmpDdcs[0]->unique_id(), 1);
 
-            tmpDdcs[0]->set_arg("spp", 512, 0);
-            tmpDdcs[0]->set_arg("spp", 512, 1);
+            // Setting radio spps
+            try {
+                this->radio->set_arg("spp", 512, 0);
+            } catch(...) {
+                LOG_WARN(RFNoC_ProgrammableDevice_i, "Failed to set spp on radio channel 0");
+            }
+
+            try {
+                this->radio->set_arg("spp", 512, 1);
+            } catch(...) {
+                LOG_WARN(RFNoC_ProgrammableDevice_i, "Failed to set spp on radio channel 1");
+            }
+
+            // Setting ddc spps
+            try {
+                tmpDdcs[0]->set_arg("spp", 512, 0);
+            } catch(...) {
+                LOG_WARN(RFNoC_ProgrammableDevice_i, "Failed to set spp on DDC channel 0");
+            }
+
+            try {
+                tmpDdcs[0]->set_arg("spp", 512, 1);
+            } catch(...) {
+                LOG_WARN(RFNoC_ProgrammableDevice_i, "Failed to set spp on DDC channel 1");
+            }
 
             tunerIDToRx[0]->ddc = tmpDdcs[0];
             tunerIDToRx[0]->ddcPort = 0;
@@ -609,8 +640,31 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
             this->radioChainGraph->connect(this->radio->unique_id(), 0, tmpDdcs[0]->unique_id(), 0);
             this->radioChainGraph->connect(this->radio->unique_id(), 1, tmpDdcs[1]->unique_id(), 0);
 
-            tmpDdcs[0]->set_arg("spp", 512, 0);
-            tmpDdcs[1]->set_arg("spp", 512, 0);
+            // Setting radio spps
+            try {
+                this->radio->set_arg("spp", 512, 0);
+            } catch(...) {
+                LOG_WARN(RFNoC_ProgrammableDevice_i, "Failed to set spp on radio channel 0");
+            }
+
+            try {
+                this->radio->set_arg("spp", 512, 1);
+            } catch(...) {
+                LOG_WARN(RFNoC_ProgrammableDevice_i, "Failed to set spp on radio channel 1");
+            }
+
+            // Setting ddc spps
+            try {
+                tmpDdcs[0]->set_arg("spp", 512, 0);
+            } catch(...) {
+                LOG_WARN(RFNoC_ProgrammableDevice_i, "Failed to set spp on DDC 0");
+            }
+
+            try {
+                tmpDdcs[1]->set_arg("spp", 512, 0);
+            } catch(...) {
+                LOG_WARN(RFNoC_ProgrammableDevice_i, "Failed to set spp on DDC 1");
+            }
 
             tunerIDToRx[0]->ddc = tmpDdcs[0];
             tunerIDToRx[0]->ddcPort = 0;
