@@ -384,7 +384,12 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
 
     // Clear the USRP device
     if (this->usrp.get()) {
-        this->usrp->clear();
+        // This throws exceptions occasionally
+        try {
+            this->usrp->clear();
+        } catch(...) {
+
+        }
     }
 
     LOG_INFO(RFNoC_ProgrammableDevice_i, "C");
