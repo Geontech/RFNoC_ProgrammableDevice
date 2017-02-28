@@ -371,14 +371,11 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
     LOG_INFO(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
     // Clear the radio
-    if (this->radio.get()) {
-        this->radio->clear();
-    }
+    //if (this->radio.get()) {
+    //    this->radio->clear();
+    //}
 
-    LOG_INFO(RFNoC_ProgrammableDevice_i, "A");
-
-    // Reset the radio pointer
-    this->radio.reset();
+    //LOG_INFO(RFNoC_ProgrammableDevice_i, "A");
 
     LOG_INFO(RFNoC_ProgrammableDevice_i, "B");
 
@@ -391,6 +388,9 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
 
         }
     }
+
+    // Reset the radio pointer
+    this->radio.reset();
 
     LOG_INFO(RFNoC_ProgrammableDevice_i, "C");
 
