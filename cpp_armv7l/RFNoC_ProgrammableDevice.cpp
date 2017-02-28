@@ -837,6 +837,7 @@ void RFNoC_ProgrammableDevice_i::connectionRemoved(const char *connectionID)
         delete it->second->rxThread;
         it->second->rxThread = NULL;
     } else {
+        it->second->ddc->disconnect_output_port(it->second->ddcPort);
         it->second->connected = false;
     }
 }
