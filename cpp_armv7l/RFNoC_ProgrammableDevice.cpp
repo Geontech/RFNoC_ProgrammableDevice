@@ -234,6 +234,9 @@ bool RFNoC_ProgrammableDevice_i::connectRadioRX(const CORBA::ULong &portHash, co
 
             this->radioChainGraph->connect(ddc->unique_id(), ddcPort, blockToConnect, blockPort);
 
+            it->second->downstreamBlock = this->usrp->get_block_ctrl(blockToConnect);
+            it->second->downstreamBlockPort = blockPort;
+
             return true;
         }
     }
@@ -842,6 +845,17 @@ void RFNoC_ProgrammableDevice_i::connectionRemoved(const char *connectionID)
         } catch(...) {
             LOG_WARN(RFNoC_ProgrammableDevice_i, "Exception occurred while disconnecting " << it->second->ddc->unique_id());
         }
+
+        if (it->second->downstreamBlock.get()) {
+            try {
+                it->second->downstreamBlock->disconnect_input_port(it->second->downstreamBlockPort);
+            } catch(...) {
+                LOG_WARN(RFNoC_ProgrammableDevice_i, "Exception occurred while disconnecting " << it->second->downstreamBlock->unique_id());
+            }
+
+            it->second->downstreamBlock.reset();
+        }
+
         it->second->connected = false;
     }
 }

@@ -24,6 +24,8 @@ struct RxObject {
     bool connected;
     uhd::rfnoc::ddc_block_ctrl::sptr ddc;
     size_t ddcPort;
+    uhd::rfnoc::block_ctrl_base::sptr downstreamBlock;
+    size_t downstreamBlockPort;
     std::vector<std::complex<short> > output;
     size_t radioChannel;
     uhd::rx_streamer::sptr rxStream;
