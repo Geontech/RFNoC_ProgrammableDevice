@@ -840,6 +840,8 @@ void RFNoC_ProgrammableDevice_i::connectionRemoved(const char *connectionID)
         delete it->second->rxThread;
         it->second->rxThread = NULL;
     } else {
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Disconnecting DDC from downstream block in fabric");
+
         try {
             it->second->ddc->disconnect_output_port(it->second->ddcPort);
         } catch(...) {
@@ -857,6 +859,8 @@ void RFNoC_ProgrammableDevice_i::connectionRemoved(const char *connectionID)
         }
 
         it->second->connected = false;
+
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Successfully disconnected");
     }
 }
 
