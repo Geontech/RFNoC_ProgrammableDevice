@@ -1311,6 +1311,11 @@ bool RFNoC_ProgrammableDevice_i::deviceDeleteTuning(
 
     // Clear the objects
     if (this->tunerIDToRx.find(tuner_id) != this->tunerIDToRx.end()) {
+        std::vector<short> empty;
+        BULKIO::PrecisionUTCTime T = bulkio::time::utils::now();
+
+        this->dataShort_out->pushPacket(empty, T, true, fts.stream_id);
+
         fts.stream_id.clear();
         removeAllocationIdRouting(tuner_id);
         this->tunerIDToRx[tuner_id]->used = false;
