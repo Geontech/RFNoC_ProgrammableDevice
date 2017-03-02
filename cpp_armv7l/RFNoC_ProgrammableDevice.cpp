@@ -805,11 +805,6 @@ void RFNoC_ProgrammableDevice_i::connectionAdded(const char *connectionID)
 
                 this->radioChainGraph->connect(ddc->unique_id(), ddcPort, blockToConnect, blockPort);
 
-                uhd::rfnoc::ddc_block_ctrl::sptr ddc = it->second->ddc;
-                size_t ddcPort = it->second->ddcPort;
-
-                this->radioChainGraph->connect(ddc->unique_id(), ddcPort, blockToConnect, blockPort);
-
                 it->second->connected = true;
 
                 it->second->downstreamBlock = this->usrp->get_block_ctrl(blockToConnect);
