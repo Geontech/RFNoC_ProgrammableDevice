@@ -849,6 +849,8 @@ void RFNoC_ProgrammableDevice_i::connectionRemoved(const char *connectionID)
         }
 
         if (it->second->downstreamBlock.get()) {
+            LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Disconnecting downstream block from DDC in fabric");
+
             try {
                 it->second->downstreamBlock->disconnect_input_port(it->second->downstreamBlockPort);
             } catch(...) {
@@ -856,6 +858,8 @@ void RFNoC_ProgrammableDevice_i::connectionRemoved(const char *connectionID)
             }
 
             it->second->downstreamBlock.reset();
+        } else {
+            LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Downstream block was not connected");
         }
 
         it->second->connected = false;
