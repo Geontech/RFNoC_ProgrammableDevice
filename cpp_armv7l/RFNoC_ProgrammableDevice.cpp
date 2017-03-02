@@ -1051,7 +1051,7 @@ void RFNoC_ProgrammableDevice_i::deviceEnable(frontend_tuner_status_struct_struc
         return;
     }
 
-    fts.enabled = false;
+    fts.enabled = true;
     return;
 }
 
