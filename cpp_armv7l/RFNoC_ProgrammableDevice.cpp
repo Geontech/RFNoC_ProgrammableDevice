@@ -1039,26 +1039,19 @@ void RFNoC_ProgrammableDevice_i::deviceEnable(frontend_tuner_status_struct_struc
     ************************************************************/
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
-    size_t radioChannel;
     std::map<size_t, RxObject *>::iterator rxIt = this->tunerIDToRx.find(tuner_id);
     std::map<size_t, TxObject *>::iterator txIt = this->tunerIDToTx.find(tuner_id);
 
-    if (rxIt != this->tunerIDToRx.end()) {
-        radioChannel = rxIt->second->radioChannel;
-    } else if (txIt != this->tunerIDToTx.end()) {
-        radioChannel = txIt->second->radioChannel;
+    if (rxIt != this->tunerIDToRx.end() && fts.tuner_type == "RX_DIGITIZER") {
+        rxIt->second->ddc->set_rx_streamer(true, rxIt->second->ddcPort);
+    } else if (txIt != this->tunerIDToTx.end() && fts.tuner_type == "TX") {
+        txIt->second->duc->set_tx_streamer(true, txIt->second->ducPort);
     } else {
-        LOG_WARN(RFNoC_ProgrammableDevice_i, "Attempted to enable tuner with invalid ID");
+        LOG_WARN(RFNoC_ProgrammableDevice_i, "Attempted to disable tuner with invalid ID");
         return;
     }
 
-    if (fts.tuner_type == "RX_DIGITIZER") {
-        this->radio->set_rx_streamer(true, radioChannel);
-    } else if (fts.tuner_type == "TX") {
-        this->radio->set_tx_streamer(true, radioChannel);
-    }
-
-    fts.enabled = true;
+    fts.enabled = false;
     return;
 }
 
@@ -1072,23 +1065,16 @@ void RFNoC_ProgrammableDevice_i::deviceDisable(frontend_tuner_status_struct_stru
     ************************************************************/
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
-    size_t radioChannel;
     std::map<size_t, RxObject *>::iterator rxIt = this->tunerIDToRx.find(tuner_id);
     std::map<size_t, TxObject *>::iterator txIt = this->tunerIDToTx.find(tuner_id);
 
-    if (rxIt != this->tunerIDToRx.end()) {
-        radioChannel = rxIt->second->radioChannel;
-    } else if (txIt != this->tunerIDToTx.end()) {
-        radioChannel = txIt->second->radioChannel;
+    if (rxIt != this->tunerIDToRx.end() && fts.tuner_type == "RX_DIGITIZER") {
+        rxIt->second->ddc->set_rx_streamer(false, rxIt->second->ddcPort);
+    } else if (txIt != this->tunerIDToTx.end() && fts.tuner_type == "TX") {
+        txIt->second->duc->set_tx_streamer(false, txIt->second->ducPort);
     } else {
         LOG_WARN(RFNoC_ProgrammableDevice_i, "Attempted to disable tuner with invalid ID");
         return;
-    }
-
-    if (fts.tuner_type == "RX_DIGITIZER") {
-        this->radio->set_rx_streamer(false, radioChannel);
-    } else if (fts.tuner_type == "TX") {
-        this->radio->set_tx_streamer(false, radioChannel);
     }
 
     fts.enabled = false;
