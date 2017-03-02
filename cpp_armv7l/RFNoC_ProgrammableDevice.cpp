@@ -1311,6 +1311,7 @@ bool RFNoC_ProgrammableDevice_i::deviceDeleteTuning(
 
     // Clear the objects
     if (this->tunerIDToRx.find(tuner_id) != this->tunerIDToRx.end()) {
+        fts.stream_id.clear();
         removeAllocationIdRouting(tuner_id);
         this->tunerIDToRx[tuner_id]->used = false;
     } else if (this->tunerIDToTx.find(tuner_id) != this->tunerIDToTx.end()) {
