@@ -1051,6 +1051,8 @@ void RFNoC_ProgrammableDevice_i::deviceEnable(frontend_tuner_status_struct_struc
         return;
     }
 
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Enabled tuner " << tuner_id);
+
     fts.enabled = true;
     return;
 }
@@ -1076,6 +1078,8 @@ void RFNoC_ProgrammableDevice_i::deviceDisable(frontend_tuner_status_struct_stru
         LOG_WARN(RFNoC_ProgrammableDevice_i, "Attempted to disable tuner with invalid ID");
         return;
     }
+
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Disabled tuner " << tuner_id);
 
     fts.enabled = false;
     return;
