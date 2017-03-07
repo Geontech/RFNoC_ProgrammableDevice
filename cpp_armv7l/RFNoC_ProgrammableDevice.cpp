@@ -868,6 +868,7 @@ void RFNoC_ProgrammableDevice_i::connectionRemoved(const char *connectionID)
         }
 
         it->second->connected = false;
+        it->second->downstreamBlock.reset();
 
         LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Successfully disconnected");
     }
