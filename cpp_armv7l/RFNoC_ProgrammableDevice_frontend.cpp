@@ -1033,7 +1033,7 @@ void RFNoC_ProgrammableDevice_i::setTunerOutputSampleRate(const std::string& all
 
             // re-enable
             if (is_tuner_enabled) {
-                it->second->ddc->set_rx_streamer(false, it->second->ddcPort);
+                it->second->ddc->set_rx_streamer(true, it->second->ddcPort);
             }
         } else if (frontend_tuner_status[idx].tuner_type == "TX") {
             std::map<std::string, TxObject *>::iterator it = this->allocationIDToTx.find(allocation_id);
@@ -1084,7 +1084,7 @@ void RFNoC_ProgrammableDevice_i::setTunerOutputSampleRate(const std::string& all
 
             // re-enable
             if (is_tuner_enabled) {
-                it->second->duc->set_tx_streamer(false, it->second->ducPort);
+                it->second->duc->set_tx_streamer(true, it->second->ducPort);
             }
         } else {
             std::ostringstream msg;
