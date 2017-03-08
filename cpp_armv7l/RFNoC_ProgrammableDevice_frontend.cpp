@@ -683,7 +683,7 @@ void RFNoC_ProgrammableDevice_i::setTunerCenterFrequency(const std::string& allo
         if (frontend_tuner_status[idx].tuner_type == "RX_DIGITIZER") {
             std::map<std::string, RxObject *>::iterator it = this->allocationIDToRx.find(allocation_id);
 
-            if (it == this->allocationIDToRx) {
+            if (it == this->allocationIDToRx.end()) {
                 std::ostringstream msg;
                 msg << "setTunerCenterFrequency|ID (" << allocation_id << ") does not map to RX object.";
                 LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
@@ -710,7 +710,7 @@ void RFNoC_ProgrammableDevice_i::setTunerCenterFrequency(const std::string& allo
         } else if (frontend_tuner_status[idx].tuner_type == "TX") {
             std::map<std::string, TxObject *>::iterator it = this->allocationIDToTx.find(allocation_id);
 
-            if (it == this->allocationIDToTx) {
+            if (it == this->allocationIDToTx.end()) {
                 std::ostringstream msg;
                 msg << "setTunerCenterFrequency|ID (" << allocation_id << ") does not map to TX object.";
                 LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
@@ -814,7 +814,7 @@ void RFNoC_ProgrammableDevice_i::setTunerGain(const std::string& allocation_id, 
         if (frontend_tuner_status[idx].tuner_type == "RX_DIGITIZER") {
             std::map<std::string, RxObject *>::iterator it = this->allocationIDToRx.find(allocation_id);
 
-            if (it == this->allocationIDToRx) {
+            if (it == this->allocationIDToRx.end()) {
                 std::ostringstream msg;
                 msg << "setTunerGain|ID (" << allocation_id << ") does not map to RX object.";
                 LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
@@ -841,7 +841,7 @@ void RFNoC_ProgrammableDevice_i::setTunerGain(const std::string& allocation_id, 
         } else if (frontend_tuner_status[idx].tuner_type == "TX") {
             std::map<std::string, TxObject *>::iterator it = this->allocationIDToTx.find(allocation_id);
 
-            if (it == this->allocationIDToTx) {
+            if (it == this->allocationIDToTx.end()) {
                 std::ostringstream msg;
                 msg << "setTunerGain|ID (" << allocation_id << ") does not map to TX object.";
                 LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
@@ -912,7 +912,7 @@ void RFNoC_ProgrammableDevice_i::setTunerEnable(const std::string& allocation_id
     if (frontend_tuner_status[idx].tuner_type == "RX_DIGITIZER") {
         std::map<std::string, RxObject *>::iterator it = this->allocationIDToRx.find(allocation_id);
 
-        if (it == this->allocationIDToRx) {
+        if (it == this->allocationIDToRx.end()) {
             std::ostringstream msg;
             msg << "setTunerEnable|ID (" << allocation_id << ") does not map to RX object.";
             LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
@@ -923,7 +923,7 @@ void RFNoC_ProgrammableDevice_i::setTunerEnable(const std::string& allocation_id
     } else if (frontend_tuner_status[idx].tuner_type == "TX") {
         std::map<std::string, TxObject *>::iterator it = this->allocationIDToTx.find(allocation_id);
 
-        if (it == this->allocationIDToTx) {
+        if (it == this->allocationIDToTx.end()) {
             std::ostringstream msg;
             msg << "setTunerEnable|ID (" << allocation_id << ") does not map to TX object.";
             LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
@@ -983,7 +983,7 @@ void RFNoC_ProgrammableDevice_i::setTunerOutputSampleRate(const std::string& all
         if (frontend_tuner_status[idx].tuner_type == "RX_DIGITIZER") {
             std::map<std::string, RxObject *>::iterator it = this->allocationIDToRx.find(allocation_id);
 
-            if (it == this->allocationIDToRx) {
+            if (it == this->allocationIDToRx.end()) {
                 std::ostringstream msg;
                 msg << "setTunerOutputSampleRate|ID (" << allocation_id << ") does not map to RX object.";
                 LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
@@ -1038,7 +1038,7 @@ void RFNoC_ProgrammableDevice_i::setTunerOutputSampleRate(const std::string& all
         } else if (frontend_tuner_status[idx].tuner_type == "TX") {
             std::map<std::string, TxObject *>::iterator it = this->allocationIDToTx.find(allocation_id);
 
-            if (it == this->allocationIDToTx) {
+            if (it == this->allocationIDToTx.end()) {
                 std::ostringstream msg;
                 msg << "setTunerOutputSampleRate|ID (" << allocation_id << ") does not map to TX object.";
                 LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
