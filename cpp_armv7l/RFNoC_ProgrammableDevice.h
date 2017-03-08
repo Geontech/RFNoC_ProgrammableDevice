@@ -49,7 +49,7 @@ struct TxObject {
 
 class RFNoC_ProgrammableDevice_i;
 
-class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_type
+class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_type, public::frontend::digital_tuner_delegation
 {
     ENABLE_LOGGING
     public:
@@ -200,6 +200,7 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         uhd::device_addr_t usrpAddress;
 
         // Front End Members
+        frontend::InDigitalTunerPort *DigitalTuner_in_other;
         std::map<std::string, std::string> listeners;
 
         // Programmable Members

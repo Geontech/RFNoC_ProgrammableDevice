@@ -64,6 +64,10 @@ void RFNoC_ProgrammableDevice_i::constructor()
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
+    // Set up the digital tuner in port
+    this->DigitalTuner_in_other = new frontend::InDigitalTunerPort("DigitalTuner_in", this);
+    addPort("DigitalTuner_in", this->DigitalTuner_in_other);
+
     // Set the load requests and statuses pointers to the properties
     setHwLoadRequestsPtr(&hw_load_requests);
     setHwLoadStatusesPtr(&hw_load_statuses);
