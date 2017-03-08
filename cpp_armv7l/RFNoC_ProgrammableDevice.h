@@ -79,6 +79,9 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         uhd::device3::sptr getUsrp() { return this->usrp; }
         void setHwLoadStatus(const std::string &deviceID, const hw_load_status_object &hwLoadStatus);
 
+    public:
+        CF::Properties* getTunerStatus(const std::string &allocation_id);
+
     protected:
         Device_impl* generatePersona(int argc, char* argv[], ConstructorPtr fnptr, const char* libName);
         bool loadHardware(HwLoadStatusStruct& requestStatus);

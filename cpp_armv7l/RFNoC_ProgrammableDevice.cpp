@@ -58,6 +58,9 @@ RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *i
 RFNoC_ProgrammableDevice_i::~RFNoC_ProgrammableDevice_i()
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    delete this->DigitalTuner_in_other;
+    this->DigitalTuner_in_other = NULL;
 }
 
 void RFNoC_ProgrammableDevice_i::constructor()
@@ -294,6 +297,22 @@ void RFNoC_ProgrammableDevice_i::setHwLoadStatus(const std::string &deviceID, co
     for (deviceHwStatusMap::iterator it = this->deviceIDToHwStatus.begin(); it != this->deviceIDToHwStatus.end(); ++it) {
         this->hw_load_statuses.push_back(it->second);
     }
+}
+
+CF::Properties* RFNoC_ProgrammableDevice_i::getTunerStatus(const std::string &allocation_id)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    CF::Properties* tmpVal = new CF::Properties();
+    long tuner_id = getTunerMapping(allocation_id);
+    if (tuner_id < 0)
+        throw FRONTEND::FrontendException(("ERROR: ID: " + std::string(allocation_id) + " IS NOT ASSOCIATED WITH ANY TUNER!").c_str());
+    CORBA::Any prop;
+    prop <<= *(static_cast<frontend_tuner_status_struct_struct*>(&this->frontend_tuner_status[tuner_id]));
+    prop >>= tmpVal;
+
+    CF::Properties_var tmp = new CF::Properties(*tmpVal);
+    return tmp._retn();
 }
 
 Device_impl* RFNoC_ProgrammableDevice_i::generatePersona(int argc, char* argv[], ConstructorPtr personaEntryPoint, const char* libName)
