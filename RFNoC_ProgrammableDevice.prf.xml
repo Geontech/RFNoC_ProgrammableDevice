@@ -142,6 +142,10 @@ False: Does not need control and can just attach to any currently tasked device 
       <simple id="FRONTEND::tuner_status::enabled" name="enabled" type="boolean">
         <description>Indicates if tuner is enabled, in reference to the output state of the tuner.</description>
       </simple>
+      <simple id="FRONTEND::tuner_status::gain" name="gain" type="double">
+        <description>Current gain in dB.</description>
+        <units>dB</units>
+      </simple>
       <simple id="FRONTEND::tuner_status::group_id" name="group_id" type="string">
         <description>Unique ID that specifies a group of Device.</description>
       </simple>

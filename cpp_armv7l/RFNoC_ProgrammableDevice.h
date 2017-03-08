@@ -80,7 +80,25 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         void setHwLoadStatus(const std::string &deviceID, const hw_load_status_object &hwLoadStatus);
 
     public:
+        std::string getTunerType(const std::string& id);
+        bool getTunerDeviceControl(const std::string& id);
+        std::string getTunerGroupId(const std::string& id);
+        std::string getTunerRfFlowId(const std::string& id);
         CF::Properties* getTunerStatus(const std::string &allocation_id);
+        void setTunerCenterFrequency(const std::string& id, double freq);
+        double getTunerCenterFrequency(const std::string& id);
+        void setTunerBandwidth(const std::string& id, double bw);
+        double getTunerBandwidth(const std::string& id);
+        void setTunerAgcEnable(const std::string& id, bool enable);
+        bool getTunerAgcEnable(const std::string& id);
+        void setTunerGain(const std::string& id, float gain);
+        float getTunerGain(const std::string& id);
+        void setTunerReferenceSource(const std::string& id, long source);
+        long getTunerReferenceSource(const std::string& id);
+        void setTunerEnable(const std::string& id, bool enable);
+        bool getTunerEnable(const std::string& id);
+        void setTunerOutputSampleRate(const std::string& id, double sr);
+        double getTunerOutputSampleRate(const std::string& id);
 
     protected:
         Device_impl* generatePersona(int argc, char* argv[], ConstructorPtr fnptr, const char* libName);

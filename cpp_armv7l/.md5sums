@@ -6,7 +6,7 @@ eafe89154e07dbc351d1db95e7f0e907  entry_point.h
 41a428bef0a7a68c81491d2450836793  RFNoC_ProgrammableDevice_prog_base.h
 31111f1324f7b622951ae68a8f1b5417  configure.ac
 66bee026df3fc6c02c75eb1532023cae  Makefile.am
-7182546115d6b87cbfcef4acf18bb6fd  struct_props.h
+758abc0e86987999dc462b15525981a3  struct_props.h
 64d3c4601b29b9d233654a417c064583  Makefile.am.ide
 a341c104e851f6290705bf3c10f761b9  RFNoC_ProgrammableDevice.cpp
 f0092f728b554fff0e1364c364153277  port_impl.cpp
