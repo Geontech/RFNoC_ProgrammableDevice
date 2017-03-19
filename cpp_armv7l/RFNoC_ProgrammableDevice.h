@@ -15,6 +15,7 @@ typedef RFNoC_ProgrammableDevice_prog_base<hw_load_request_struct_struct, hw_loa
 
 #include "GenericThreadedComponent.h"
 #include "RFNoC_Persona.h"
+#include "RFNoC_Programmable.h"
 
 // The size of the port hashes
 const CORBA::ULong HASH_SIZE = 1000000;
@@ -49,7 +50,7 @@ struct TxObject {
 
 class RFNoC_ProgrammableDevice_i;
 
-class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_type, public::frontend::digital_tuner_delegation
+class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_type, public::frontend::digital_tuner_delegation, public RFNoC_Programmable
 {
     ENABLE_LOGGING
     public:
@@ -74,10 +75,10 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
 
         void releaseObject() throw (CF::LifeCycle::ReleaseError, CORBA::SystemException);
 
-        bool connectRadioRX(const CORBA::ULong &portHash, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort);
-        bool connectRadioTX(const std::string &allocationID, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort);
+        bool connectRadioRX(const CORBA::ULong &portHash, const BlockInfo &blockInfo);
+        bool connectRadioTX(const std::string &allocationID, const BlockInfo &blockInfo);
         uhd::device3::sptr getUsrp() { return this->usrp; }
-        void setHwLoadStatus(const std::string &deviceID, const hw_load_status_object &hwLoadStatus);
+        void setGetBlockInfoFromHashCb(const std::string &deviceID, getBlockInfoFromHashCallback getBlockInfoFromHashCb);
 
     public:
         std::string getTunerType(const std::string& id);
@@ -119,8 +120,6 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
 
         int rxServiceFunction(size_t streamIndex);
         int txServiceFunction(size_t streamIndex);
-
-        void setGetBlockInfoFromHash(const std::string &deviceID, getBlockInfoFromHashCallback getBlockInfoFromHashCb);
 
     protected:
         typedef std::map<std::string, size_t> string_number_mapping;
@@ -221,7 +220,7 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         uhd::device_addr_t usrpAddress;
 
         // Front End Members
-        frontend::InDigitalTunerPort *DigitalTuner_in_other;
+        frontend::InDigitalTunerPort *DigitalTuner_in;
         std::map<std::string, std::string> listeners;
 
         // Programmable Members

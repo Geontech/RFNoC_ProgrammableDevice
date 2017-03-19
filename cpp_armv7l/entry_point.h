@@ -3,6 +3,7 @@
 
 #include <uhd/device3.hpp>
 #include "RFNoC_Persona.h"
+#include "RFNoC_Programmable.h"
 
 // ************* AGREED UPON METHOD TO INSTANTIATE DEVICE FROM SHARED OBJECT *************
 //
@@ -24,11 +25,7 @@
 typedef Device_impl* (*ConstructorPtr)(
         int,
         char*[],
-        Device_impl* parentDevice,
-        connectRadioRXCallback connectRadioRXCb,
-        connectRadioTXCallback connectRadioTXCb,
-        getUsrpCallback getUsrpCb,
-        hwLoadStatusCallback hwLoadStatusCb,
-        setGetBlockInfoFromHashCallback setGetBlockInfoFromHashCb);
+        RFNoC_Programmable *,
+        setGetBlockInfoFromHashCallback);
 
 #endif // RFNOC_PROGRAMMABLEDEVICE_ENTRY_POINTS_H

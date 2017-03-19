@@ -6,6 +6,7 @@
 redhawk_SOURCES_auto = GenericThreadedComponent.cpp
 redhawk_SOURCES_auto += GenericThreadedComponent.h
 redhawk_SOURCES_auto += RFNoC_Persona.h
+redhawk_SOURCES_auto += RFNoC_Programmable.h
 redhawk_SOURCES_auto += RFNoC_ProgrammableDevice.cpp
 redhawk_SOURCES_auto += RFNoC_ProgrammableDevice.h
 redhawk_SOURCES_auto += RFNoC_ProgrammableDevice_base.cpp
@@ -20,4 +21,4 @@ redhawk_SOURCES_auto += main.cpp
 redhawk_SOURCES_auto += port_impl.cpp
 redhawk_SOURCES_auto += port_impl.h
 redhawk_SOURCES_auto += struct_props.h
-redhawk_INCLUDES_auto = -I/home/Patrick/git/uhd/host/include
+redhawk_INCLUDES_auto = -I/home/pwolfram/git/uhd/host/include

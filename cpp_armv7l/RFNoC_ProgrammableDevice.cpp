@@ -20,6 +20,7 @@ RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *i
     DEFAULT_BITFILE_PATH("/usr/share/uhd/images/usrp_e310_fpga.bit"),
     HARDWARE_ID("E310"),
     IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit"),
+    DigitalTuner_in(NULL),
     canUnlink(true)
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
@@ -30,6 +31,7 @@ RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *i
     DEFAULT_BITFILE_PATH("/usr/share/uhd/images/usrp_e310_fpga.bit"),
     HARDWARE_ID("E310"),
     IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit"),
+    DigitalTuner_in(NULL),
     canUnlink(true)
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
@@ -40,6 +42,7 @@ RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *i
     DEFAULT_BITFILE_PATH("/usr/share/uhd/images/usrp_e310_fpga.bit"),
     HARDWARE_ID("E310"),
     IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit"),
+    DigitalTuner_in(NULL),
     canUnlink(true)
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
@@ -50,6 +53,7 @@ RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *i
     DEFAULT_BITFILE_PATH("/usr/share/uhd/images/usrp_e310_fpga.bit"),
     HARDWARE_ID("E310"),
     IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit"),
+    DigitalTuner_in(NULL),
     canUnlink(true)
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
@@ -59,8 +63,8 @@ RFNoC_ProgrammableDevice_i::~RFNoC_ProgrammableDevice_i()
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
-    delete this->DigitalTuner_in_other;
-    this->DigitalTuner_in_other = NULL;
+    delete this->DigitalTuner_in;
+    this->DigitalTuner_in = NULL;
 }
 
 void RFNoC_ProgrammableDevice_i::constructor()
@@ -68,8 +72,8 @@ void RFNoC_ProgrammableDevice_i::constructor()
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
     // Set up the digital tuner in port
-    this->DigitalTuner_in_other = new frontend::InDigitalTunerPort("DigitalTuner_in", this);
-    addPort("DigitalTuner_in", this->DigitalTuner_in_other);
+    this->DigitalTuner_in = new frontend::InDigitalTunerPort("DigitalTuner_in", this);
+    addPort("DigitalTuner_in", this->DigitalTuner_in);
 
     // Set the load requests and statuses pointers to the properties
     setHwLoadRequestsPtr(&hw_load_requests);
@@ -204,7 +208,7 @@ void RFNoC_ProgrammableDevice_i::releaseObject() throw (CF::LifeCycle::ReleaseEr
     RFNoC_ProgrammableDevice_prog_base_type::releaseObject();
 }
 
-bool RFNoC_ProgrammableDevice_i::connectRadioRX(const CORBA::ULong &portHash, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort)
+bool RFNoC_ProgrammableDevice_i::connectRadioRX(const CORBA::ULong &portHash, const BlockInfo &blockInfo)
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
@@ -213,7 +217,7 @@ bool RFNoC_ProgrammableDevice_i::connectRadioRX(const CORBA::ULong &portHash, co
         return false;
     }
 
-    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Checking output port for hash " << portHash << " to connect radio chain to " << blockToConnect.to_string());
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Checking output port for hash " << portHash << " to connect radio chain to " << blockInfo.blockID.to_string());
 
     bulkio::OutShortPort::ConnectionsList connections = this->dataShort_out->getConnections();
 
@@ -239,12 +243,12 @@ bool RFNoC_ProgrammableDevice_i::connectRadioRX(const CORBA::ULong &portHash, co
             uhd::rfnoc::ddc_block_ctrl::sptr ddc = it->second->ddc;
             size_t ddcPort = it->second->ddcPort;
 
-            this->radioChainGraph->connect(ddc->unique_id(), ddcPort, blockToConnect, blockPort);
+            this->radioChainGraph->connect(ddc->unique_id(), ddcPort, blockInfo.blockID, blockInfo.port);
 
             it->second->connected = true;
 
-            it->second->downstreamBlock = this->usrp->get_block_ctrl(blockToConnect);
-            it->second->downstreamBlockPort = blockPort;
+            it->second->downstreamBlock = this->usrp->get_block_ctrl(blockInfo.blockID);
+            it->second->downstreamBlockPort = blockInfo.port;
 
             return true;
         }
@@ -255,7 +259,7 @@ bool RFNoC_ProgrammableDevice_i::connectRadioRX(const CORBA::ULong &portHash, co
     return false;
 }
 
-bool RFNoC_ProgrammableDevice_i::connectRadioTX(const std::string &allocationID, const uhd::rfnoc::block_id_t &blockToConnect, const size_t &blockPort)
+bool RFNoC_ProgrammableDevice_i::connectRadioTX(const std::string &allocationID, const BlockInfo &blockInfo)
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
@@ -274,29 +278,9 @@ bool RFNoC_ProgrammableDevice_i::connectRadioTX(const std::string &allocationID,
     uhd::rfnoc::duc_block_ctrl::sptr duc = it->second->duc;
     size_t ducPort = it->second->ducPort;
 
-    this->radioChainGraph->connect(blockToConnect, blockPort, duc->unique_id(), ducPort);
+    this->radioChainGraph->connect(blockInfo.blockID, blockInfo.port, duc->unique_id(), ducPort);
 
     return true;
-}
-
-void RFNoC_ProgrammableDevice_i::setHwLoadStatus(const std::string &deviceID, const hw_load_status_object &hwLoadStatus)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
-
-    hw_load_statuses_struct_struct hwLoadStatusStruct;
-    hwLoadStatusStruct.hardware_id = hwLoadStatus.hardware_id;
-    hwLoadStatusStruct.load_filepath = hwLoadStatus.load_filepath;
-    hwLoadStatusStruct.request_id = hwLoadStatus.request_id;
-    hwLoadStatusStruct.requester_id = hwLoadStatus.requester_id;
-    hwLoadStatusStruct.state = hwLoadStatus.state;
-
-    this->deviceIDToHwStatus[deviceID] = hwLoadStatusStruct;
-
-    this->hw_load_statuses.clear();
-
-    for (deviceHwStatusMap::iterator it = this->deviceIDToHwStatus.begin(); it != this->deviceIDToHwStatus.end(); ++it) {
-        this->hw_load_statuses.push_back(it->second);
-    }
 }
 
 CF::Properties* RFNoC_ProgrammableDevice_i::getTunerStatus(const std::string &allocation_id)
@@ -319,14 +303,10 @@ Device_impl* RFNoC_ProgrammableDevice_i::generatePersona(int argc, char* argv[],
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
-    connectRadioRXCallback connectRadioRXCb = boost::bind(&RFNoC_ProgrammableDevice_i::connectRadioRX, this, _1, _2, _3);
-    connectRadioTXCallback connectRadioTXCb = boost::bind(&RFNoC_ProgrammableDevice_i::connectRadioTX, this, _1, _2, _3);
-    getUsrpCallback getUsrpCb = boost::bind(&RFNoC_ProgrammableDevice_i::getUsrp, this);
-    hwLoadStatusCallback hwLoadStatusCb = boost::bind(&RFNoC_ProgrammableDevice_i::setHwLoadStatus, this, _1, _2);
-    setGetBlockInfoFromHashCallback setGetBlockInfoFromHashCb = boost::bind(&RFNoC_ProgrammableDevice_i::setGetBlockInfoFromHash, this, _1, _2);
+    setGetBlockInfoFromHashCallback setGetBlockInfoFromHashCb = boost::bind(&RFNoC_ProgrammableDevice_i::setGetBlockInfoFromHashCb, this, _1, _2);
 
     // Generate the Persona Device
-    Device_impl *persona = personaEntryPoint(argc, argv, this, connectRadioRXCb, connectRadioTXCb, getUsrpCb, hwLoadStatusCb, setGetBlockInfoFromHashCb);
+    Device_impl *persona = personaEntryPoint(argc, argv, this, setGetBlockInfoFromHashCb);
 
     // Something went wrong
     if (not persona) {
@@ -1043,7 +1023,7 @@ int RFNoC_ProgrammableDevice_i::txServiceFunction(size_t streamIndex)
     return NORMAL;
 }
 
-void RFNoC_ProgrammableDevice_i::setGetBlockInfoFromHash(const std::string &deviceID, getBlockInfoFromHashCallback getBlockInfoFromHashCb)
+void RFNoC_ProgrammableDevice_i::setGetBlockInfoFromHashCb(const std::string &deviceID, getBlockInfoFromHashCallback getBlockInfoFromHashCb)
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
