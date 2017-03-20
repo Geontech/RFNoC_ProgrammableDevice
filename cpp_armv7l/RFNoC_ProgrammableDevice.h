@@ -12,10 +12,10 @@ typedef RFNoC_ProgrammableDevice_prog_base<hw_load_request_struct_struct, hw_loa
 #include <uhd/rfnoc/ddc_block_ctrl.hpp>
 #include <uhd/rfnoc/duc_block_ctrl.hpp>
 #include <uhd/rfnoc/radio_ctrl.hpp>
+#include <RFNoC_Persona.h>
+#include <RFNoC_Programmable.h>
 
 #include "GenericThreadedComponent.h"
-#include "RFNoC_Persona.h"
-#include "RFNoC_Programmable.h"
 
 // The size of the port hashes
 const CORBA::ULong HASH_SIZE = 1000000;
@@ -78,7 +78,6 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         bool connectRadioRX(const CORBA::ULong &portHash, const BlockInfo &blockInfo);
         bool connectRadioTX(const std::string &allocationID, const BlockInfo &blockInfo);
         uhd::device3::sptr getUsrp() { return this->usrp; }
-        void setGetBlockInfoFromHashCb(const std::string &deviceID, getBlockInfoFromHashCallback getBlockInfoFromHashCb);
 
     public:
         std::string getTunerType(const std::string& id);
@@ -203,7 +202,6 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
     private:
         // Typedefs
         typedef std::map<std::string, hw_load_statuses_struct_struct> deviceHwStatusMap;
-        typedef std::map<std::string, getBlockInfoFromHashCallback> deviceGetBlockInfoMap;
         typedef std::map<CF::ExecutableDevice::ProcessID_Type, std::string> pidDeviceMap;
 
         // Constants
@@ -228,7 +226,6 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         std::map<std::string, RxObject *> allocationIDToRx;
         std::map<std::string, TxObject *> allocationIDToTx;
         bool canUnlink;
-        deviceGetBlockInfoMap deviceIDToGetBlockInfo;
         deviceHwStatusMap deviceIDToHwStatus;
         pidDeviceMap pidToDeviceID;
         std::map<size_t, RxObject *> tunerIDToRx;

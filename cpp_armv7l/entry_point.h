@@ -25,7 +25,6 @@
 typedef Device_impl* (*ConstructorPtr)(
         int,
         char*[],
-        RFNoC_Programmable *,
-        setGetBlockInfoFromHashCallback);
+        Device_impl *);
 
 #endif // RFNOC_PROGRAMMABLEDEVICE_ENTRY_POINTS_H

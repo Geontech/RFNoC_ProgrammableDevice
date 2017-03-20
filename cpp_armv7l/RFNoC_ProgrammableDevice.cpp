@@ -169,8 +169,8 @@ void RFNoC_ProgrammableDevice_i::terminate (CF::ExecutableDevice::ProcessID_Type
 
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Terminating device: " << deviceID);
 
-    // Unmap the device identifier from the Get Block Info callback
-    this->deviceIDToGetBlockInfo.erase(deviceID);
+    // Unmap the device identifier from the persona
+    this->deviceIdToPersona.erase(deviceID);
 
     // Unmap the device identifier from the HW Load Status
     this->deviceIDToHwStatus.erase(deviceID);
@@ -303,10 +303,8 @@ Device_impl* RFNoC_ProgrammableDevice_i::generatePersona(int argc, char* argv[],
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
-    setGetBlockInfoFromHashCallback setGetBlockInfoFromHashCb = boost::bind(&RFNoC_ProgrammableDevice_i::setGetBlockInfoFromHashCb, this, _1, _2);
-
     // Generate the Persona Device
-    Device_impl *persona = personaEntryPoint(argc, argv, this, setGetBlockInfoFromHashCb);
+    Device_impl *persona = personaEntryPoint(argc, argv, this);
 
     // Something went wrong
     if (not persona) {
@@ -782,7 +780,7 @@ void RFNoC_ProgrammableDevice_i::connectionAdded(const char *connectionID)
 
             LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Found connection ID with provides hash: " << providesHash);
 
-            BlockInfo blockInfo = this->deviceIDToGetBlockInfo[this->activeDeviceID](providesHash);
+            BlockInfo blockInfo = this->deviceIdToPersona[this->activeDeviceID]->getBlockInfoFromHash(providesHash);
 
             if (not uhd::rfnoc::block_id_t::is_valid_block_id(blockInfo.blockID)) {
                 LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Persona does not recognize this hash, starting a stream thread");
@@ -1021,13 +1019,6 @@ int RFNoC_ProgrammableDevice_i::txServiceFunction(size_t streamIndex)
     }
 
     return NORMAL;
-}
-
-void RFNoC_ProgrammableDevice_i::setGetBlockInfoFromHashCb(const std::string &deviceID, getBlockInfoFromHashCallback getBlockInfoFromHashCb)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
-
-    this->deviceIDToGetBlockInfo[deviceID] = getBlockInfoFromHashCb;
 }
 
 /*************************************************************

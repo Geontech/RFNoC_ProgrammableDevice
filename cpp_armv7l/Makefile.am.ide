@@ -5,16 +5,12 @@
 # Tool Chain Editor, and un-checking "Exclude resource from build "
 redhawk_SOURCES_auto = GenericThreadedComponent.cpp
 redhawk_SOURCES_auto += GenericThreadedComponent.h
-redhawk_SOURCES_auto += RFNoC_Persona.h
-redhawk_SOURCES_auto += RFNoC_Programmable.h
 redhawk_SOURCES_auto += RFNoC_ProgrammableDevice.cpp
 redhawk_SOURCES_auto += RFNoC_ProgrammableDevice.h
 redhawk_SOURCES_auto += RFNoC_ProgrammableDevice_base.cpp
 redhawk_SOURCES_auto += RFNoC_ProgrammableDevice_base.h
 redhawk_SOURCES_auto += RFNoC_ProgrammableDevice_frontend.cpp
 redhawk_SOURCES_auto += RFNoC_ProgrammableDevice_prog_base.h
-redhawk_SOURCES_auto += RFNoC_Utils.cpp
-redhawk_SOURCES_auto += RFNoC_Utils.h
 redhawk_SOURCES_auto += entry_point.h
 redhawk_SOURCES_auto += image_loader.hpp
 redhawk_SOURCES_auto += main.cpp
