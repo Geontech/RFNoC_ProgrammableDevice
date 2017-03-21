@@ -1232,6 +1232,7 @@ bool RFNoC_ProgrammableDevice_i::deviceSetTuning(
 
         // Push SRI
         this->tunerIDToRx[tuner_id]->sri = create(stream_id, fts);
+        this->tunerIDToRx[tuner_id]->sri.mode = 1;
 
         // Mark this radio as used
         this->tunerIDToRx[tuner_id]->used = true;
