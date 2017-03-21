@@ -700,8 +700,14 @@ void RFNoC_ProgrammableDevice_i::setTunerCenterFrequency(const std::string& allo
             // set hw with new value and update status
             frontend_tuner_status[idx].center_frequency = this->radio->set_rx_frequency(freq, it->second->radioChannel);
 
+            it->second->sri = create(frontend_tuner_status[idx].stream_id, frontend_tuner_status[idx]);
+
             // update status from hw
-            it->second->updateSRI = true;
+            if (it->second->rxThread) {
+                it->second->updateSRI = true;
+            } else if (it->second->connected) {
+                this->dataShort_out->pushSRI(it->second->sri);
+            }
 
             // re-enable
             if (is_tuner_enabled) {
@@ -830,9 +836,6 @@ void RFNoC_ProgrammableDevice_i::setTunerGain(const std::string& allocation_id, 
 
             // set hw with new value and update status
             frontend_tuner_status[idx].gain = this->radio->set_rx_gain(gain, it->second->radioChannel);
-
-            // update status from hw
-            it->second->updateSRI = true;
 
             // re-enable
             if (is_tuner_enabled) {
@@ -1028,8 +1031,14 @@ void RFNoC_ProgrammableDevice_i::setTunerOutputSampleRate(const std::string& all
                 throw;
             }
 
+            it->second->sri = create(frontend_tuner_status[idx].stream_id, frontend_tuner_status[idx]);
+
             // update status from hw
-            it->second->updateSRI = true;
+            if (it->second->rxThread) {
+                it->second->updateSRI = true;
+            } else if (it->second->connected) {
+                this->dataShort_out->pushSRI(it->second->sri);
+            }
 
             // re-enable
             if (is_tuner_enabled) {

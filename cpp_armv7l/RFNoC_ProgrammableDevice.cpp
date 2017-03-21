@@ -741,6 +741,7 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
 
         fts.bandwidth = this->radio->get_output_samp_rate(i);
         fts.center_frequency = this->radio->get_rx_frequency(i);
+        fts.gain = this->radio->get_rx_gain(i);
         fts.sample_rate = this->radio->get_output_samp_rate(i);
 
         ++currentStatus;
@@ -753,6 +754,7 @@ void RFNoC_ProgrammableDevice_i::initializeRadioChain()
 
         fts.bandwidth = this->radio->get_input_samp_rate(i);
         fts.center_frequency = this->radio->get_tx_frequency(i);
+        fts.gain = this->radio->get_tx_gain(i);
         fts.sample_rate = this->radio->get_input_samp_rate(i);
         fts.tuner_type = "TX";
 
