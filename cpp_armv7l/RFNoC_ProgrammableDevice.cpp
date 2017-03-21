@@ -79,6 +79,11 @@ void RFNoC_ProgrammableDevice_i::constructor()
     setHwLoadRequestsPtr(&hw_load_requests);
     setHwLoadStatusesPtr(&hw_load_statuses);
 
+    // There is only one FPGA available
+    hw_load_statuses.resize(1);
+    hw_load_statuses[0].hardware_id = "xc7z020clg484-1";
+    hw_load_statuses[0].state = 0;
+
     // Set the usrp address
     this->usrpAddress["no_reload_fpga"] = true;
 
@@ -1400,6 +1405,14 @@ bool RFNoC_ProgrammableDevice_i::loadBitfile(const std::string &bitfilePath)
     image_loader_args.load_fpga = true;
 
     return uhd::image_loader::load(image_loader_args);
+}
+
+void RFNoC_ProgrammableDevice_i::resetHwLoadStatus(HwLoadStatusStruct &loadStatusStruct)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    loadStatusStruct.hardware_id = "xc7z020clg484-1";
+    loadStatusStruct.state = 0;
 }
 
 void RFNoC_ProgrammableDevice_i::retrieveRxStream(size_t streamIndex)

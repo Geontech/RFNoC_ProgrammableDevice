@@ -170,6 +170,7 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         BULKIO::StreamSRI create(std::string &stream_id, frontend_tuner_status_struct_struct &frontend_status, double collector_frequency = -1.0);
         std::string getStreamId(size_t tuner_id);
         bool loadBitfile(const std::string &bitfilePath);
+        void resetHwLoadStatus(HwLoadStatusStruct &loadStatusStruct);
         void retrieveRxStream(size_t streamIndex);
         void retrieveTxStream(size_t streamIndex);
         void startRxStream(size_t streamIndex);
