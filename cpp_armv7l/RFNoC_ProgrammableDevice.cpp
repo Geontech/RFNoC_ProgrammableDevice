@@ -18,7 +18,7 @@ PREPARE_LOGGING(RFNoC_ProgrammableDevice_i)
 RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl) :
     RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl),
     DEFAULT_BITFILE_PATH("/usr/share/uhd/images/usrp_e310_fpga.bit"),
-    HARDWARE_ID("E310"),
+    HARDWARE_ID("xc7z020clg484-1"),
     IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit"),
     DigitalTuner_in(NULL),
     canUnlink(true)
@@ -29,7 +29,7 @@ RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *i
 RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl, char *compDev) :
     RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl, compDev),
     DEFAULT_BITFILE_PATH("/usr/share/uhd/images/usrp_e310_fpga.bit"),
-    HARDWARE_ID("E310"),
+    HARDWARE_ID("xc7z020clg484-1"),
     IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit"),
     DigitalTuner_in(NULL),
     canUnlink(true)
@@ -40,7 +40,7 @@ RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *i
 RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl, CF::Properties capacities) :
     RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl, capacities),
     DEFAULT_BITFILE_PATH("/usr/share/uhd/images/usrp_e310_fpga.bit"),
-    HARDWARE_ID("E310"),
+    HARDWARE_ID("xc7z020clg484-1"),
     IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit"),
     DigitalTuner_in(NULL),
     canUnlink(true)
@@ -51,7 +51,7 @@ RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *i
 RFNoC_ProgrammableDevice_i::RFNoC_ProgrammableDevice_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl, CF::Properties capacities, char *compDev) :
     RFNoC_ProgrammableDevice_prog_base_type(devMgr_ior, id, lbl, sftwrPrfl, capacities, compDev),
     DEFAULT_BITFILE_PATH("/usr/share/uhd/images/usrp_e310_fpga.bit"),
-    HARDWARE_ID("E310"),
+    HARDWARE_ID("xc7z020clg484-1"),
     IDLE_BITFILE_PATH("/usr/share/uhd/images/usrp_e3xx_fpga_idle.bit"),
     DigitalTuner_in(NULL),
     canUnlink(true)
@@ -80,9 +80,9 @@ void RFNoC_ProgrammableDevice_i::constructor()
     setHwLoadStatusesPtr(&hw_load_statuses);
 
     // There is only one FPGA available
-    hw_load_statuses.resize(1);
-    hw_load_statuses[0].hardware_id = "xc7z020clg484-1";
-    hw_load_statuses[0].state = 0;
+    this->hw_load_statuses.resize(1);
+    this->hw_load_statuses[0].hardware_id = this->HARDWARE_ID;
+    this->hw_load_statuses[0].state = 0;
 
     // Set the usrp address
     this->usrpAddress["no_reload_fpga"] = true;
@@ -1414,8 +1414,8 @@ void RFNoC_ProgrammableDevice_i::resetHwLoadStatus(HwLoadStatusStruct &loadStatu
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
-    loadStatusStruct.hardware_id = "xc7z020clg484-1";
-    loadStatusStruct.state = 0;
+    loadStatusStruct.hardware_id = this->HARDWARE_ID;
+    loadStatusStruct.state = HW_LOAD::INACTIVE;
 }
 
 void RFNoC_ProgrammableDevice_i::retrieveRxStream(size_t streamIndex)

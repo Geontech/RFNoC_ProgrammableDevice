@@ -6,6 +6,7 @@ cpp_armv7l/RFNoC_ProgrammableDevice-RFNoC_ProgrammableDevice_base.o
 cpp_armv7l/RFNoC_ProgrammableDevice-port_impl.o
 cpp_armv7l/RFNoC_ProgrammableDevice-GenericThreadedComponent.o
 cpp_armv7l/RFNoC_ProgrammableDevice-RFNoC_ProgrammableDevice_frontend.o
+cpp_armv7l/RFNoC_ProgrammableDevice-RFNoC_Utils.o
 cpp_armv7l/RFNoC_ProgrammableDevice-main.o
 cpp_armv7l/aclocal.m4
 cpp_armv7l/autom4te.cache/
