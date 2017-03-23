@@ -381,15 +381,6 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
     // The hardware may be physically unloaded at this point
     LOG_INFO(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
-    // Clear the radio
-    //if (this->radio.get()) {
-    //    this->radio->clear();
-    //}
-
-    //LOG_INFO(RFNoC_ProgrammableDevice_i, "A");
-
-    LOG_INFO(RFNoC_ProgrammableDevice_i, "B");
-
     // Clear the USRP device
     if (this->usrp.get()) {
         // This throws exceptions occasionally
@@ -403,32 +394,20 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
     // Reset the radio pointer
     this->radio.reset();
 
-    LOG_INFO(RFNoC_ProgrammableDevice_i, "C");
-
     // Reset the USRP pointer
     this->usrp.reset();
-
-    LOG_INFO(RFNoC_ProgrammableDevice_i, "D");
 
     // Clear the graph
     this->radioChainGraph.reset();
 
-    LOG_INFO(RFNoC_ProgrammableDevice_i, "E");
-
     // Clear the flows
     clearFlows();
-
-    LOG_INFO(RFNoC_ProgrammableDevice_i, "F");
 
     // Clear the frontend_tuner_status
     setNumChannels(0);
 
-    LOG_INFO(RFNoC_ProgrammableDevice_i, "G");
-
     // Load the idle bitfile
     loadBitfile(this->IDLE_BITFILE_PATH);
-
-    LOG_INFO(RFNoC_ProgrammableDevice_i, "H");
 
     // Remove the symbolic link, if necessary
     if (this->canUnlink) {
@@ -439,12 +418,8 @@ void RFNoC_ProgrammableDevice_i::unloadHardware(const HwLoadStatusStruct& reques
         }
     }
 
-    LOG_INFO(RFNoC_ProgrammableDevice_i, "I");
-
     // Clear the active device ID
     this->activeDeviceID.clear();
-
-    LOG_INFO(RFNoC_ProgrammableDevice_i, "J");
 }
 
 bool RFNoC_ProgrammableDevice_i::hwLoadRequestIsValid(const HwLoadRequestStruct& hwLoadRequestStruct)
@@ -1330,13 +1305,21 @@ void RFNoC_ProgrammableDevice_i::clearFlows()
     // Clear the map of tuner IDs to flow objects
     for (size_t i = 0; i < this->tunerIDToRx.size(); ++i) {
         if (this->tunerIDToRx[i]) {
-            delete this->tunerIDToRx[i];
+            try {
+                delete this->tunerIDToRx[i];
+            } catch(...) {
+                LOG_WARN(RFNoC_ProgrammableDevice_i, "An error occurred while deleting RX object");
+            }
         }
     }
 
     for (size_t i = 0; i < this->tunerIDToTx.size(); ++i) {
         if (this->tunerIDToTx[i]) {
-            delete this->tunerIDToTx[i];
+            try {
+                delete this->tunerIDToTx[i];
+            } catch(...) {
+                LOG_WARN(RFNoC_ProgrammableDevice_i, "An error occurred while deleting TX object");
+            }
         }
     }
 
