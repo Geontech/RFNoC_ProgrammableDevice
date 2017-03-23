@@ -1414,6 +1414,7 @@ void RFNoC_ProgrammableDevice_i::resetHwLoadStatus(HwLoadStatusStruct &loadStatu
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
+    unloadHardware(loadStatusStruct);
     loadStatusStruct.hardware_id = this->HARDWARE_ID;
     loadStatusStruct.state = HW_LOAD::INACTIVE;
 }
