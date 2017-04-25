@@ -1510,5 +1510,17 @@ void RFNoC_ProgrammableDevice_i::stopRxStream(size_t streamIndex)
         this->tunerIDToRx[streamIndex]->rxStream->issue_stream_cmd(stream_cmd);
 
         this->tunerIDToRx[streamIndex]->streamStarted = false;
+
+        // Run recv until nothing is left
+        uhd::rx_metadata_t md;
+        int num_post_samps = 0;
+
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Emptying receive queue...");
+
+        do {
+            num_post_samps = this->tunerIDToRx[streamIndex]->rxStream->recv(&this->tunerIDToRx[streamIndex]->output.front(), this->tunerIDToRx[streamIndex]->output.size(), md, 1.0);
+        } while(num_post_samps and md.error_code == uhd::rx_metadata_t::ERROR_CODE_NONE);
+
+        LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Emptied receive queue");
     }
 }
