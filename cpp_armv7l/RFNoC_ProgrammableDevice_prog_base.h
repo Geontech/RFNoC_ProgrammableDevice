@@ -270,7 +270,6 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
                 /// Search for the persona that related to the found personaId
                 personaIter = _personaMap.find(processIter->second);
                 if (personaIter != _personaMap.end()) {
-                    _deviceManager->unregisterDevice(personaIter->second->_this());
                     personaIter->second->setAdminState(CF::Device::UNLOCKED);
                     personaIter->second->releaseObject();
                     _processMap.erase(processIter); // Erase process mapping here to minimize collisions with non-persona processIds

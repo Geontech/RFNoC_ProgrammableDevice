@@ -114,7 +114,7 @@ void RFNoC_ProgrammableDevice_i::constructor()
             LOG_WARN(RFNoC_ProgrammableDevice_i, "Due to the presence of this file, only a Persona with a matching FPGA bitfile path can be launched. For proper behavior, please consult the documentation");
         }
 
-        LOG_INFO(RFNoC_ProgrammableDevice_i, "*********************************************************************************************************************************************************\n");
+        LOG_INFO(RFNoC_ProgrammableDevice_i, "\n*********************************************************************************************************************************************************");
     }
 
     // Register the property change listeners
