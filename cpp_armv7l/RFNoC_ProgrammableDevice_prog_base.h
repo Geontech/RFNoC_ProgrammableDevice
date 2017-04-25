@@ -274,6 +274,7 @@ class RFNoC_ProgrammableDevice_prog_base : public RFNoC_ProgrammableDevice_base
                     personaIter->second->releaseObject();
                     _processMap.erase(processIter); // Erase process mapping here to minimize collisions with non-persona processIds
                     _personaMap.erase(personaIter);
+                    LOG_INFO(RFNoC_ProgrammableDevice_prog_base, ">>>>>HERE<<<<<");
                     return;
                 }
             }
