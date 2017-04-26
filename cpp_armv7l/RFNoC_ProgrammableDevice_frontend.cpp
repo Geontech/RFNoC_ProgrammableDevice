@@ -701,6 +701,7 @@ void RFNoC_ProgrammableDevice_i::setTunerCenterFrequency(const std::string& allo
             frontend_tuner_status[idx].center_frequency = this->radio->set_rx_frequency(freq, it->second->radioChannel);
 
             it->second->sri = create(frontend_tuner_status[idx].stream_id, frontend_tuner_status[idx]);
+            it->second->sri.mode = 1;
 
             // update status from hw
             if (it->second->rxThread) {
@@ -1032,6 +1033,7 @@ void RFNoC_ProgrammableDevice_i::setTunerOutputSampleRate(const std::string& all
             }
 
             it->second->sri = create(frontend_tuner_status[idx].stream_id, frontend_tuner_status[idx]);
+            it->second->sri.mode = 1;
 
             // update status from hw
             if (it->second->rxThread) {
