@@ -165,7 +165,7 @@ void RFNoC_ProgrammableDevice_i::terminate (CF::ExecutableDevice::ProcessID_Type
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
 
     if (this->pidToDeviceID.find(processId) == this->pidToDeviceID.end()) {
-        LOG_WARN(RFNoC_ProgrammableDevice_i, "Attempted to terminate a process with an ID not tracked by this Device");
+        LOG_WARN(RFNoC_ProgrammableDevice_i, "Attempted to terminate a process with an ID not tracked by this Device: " << processId);
         throw CF::ExecutableDevice::InvalidProcess();
     }
 
