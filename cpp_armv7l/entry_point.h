@@ -2,8 +2,8 @@
 #define RFNOC_PROGRAMMABLEDEVICE_ENTRY_POINTS_H
 
 #include <uhd/device3.hpp>
-#include "RFNoC_Persona.h"
-#include "RFNoC_Programmable.h"
+#include <RFNoC_Persona.h>
+#include <RFNoC_Programmable.h>
 
 // ************* AGREED UPON METHOD TO INSTANTIATE DEVICE FROM SHARED OBJECT *************
 //
