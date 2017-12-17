@@ -78,6 +78,7 @@ class RFNoC_ProgrammableDevice_i : public RFNoC_ProgrammableDevice_prog_base_typ
         bool connectRadioRX(const CORBA::ULong &portHash, const BlockInfo &blockInfo);
         bool connectRadioTX(const std::string &allocationID, const BlockInfo &blockInfo);
         uhd::device3::sptr getUsrp() { return this->usrp; }
+        void setPersonaMapping(const std::string& deviceId, RFNoC_Persona *persona);
 
     public:
         std::string getTunerType(const std::string& id);

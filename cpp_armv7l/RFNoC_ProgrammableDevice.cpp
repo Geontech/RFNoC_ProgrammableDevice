@@ -288,6 +288,22 @@ bool RFNoC_ProgrammableDevice_i::connectRadioTX(const std::string &allocationID,
     return true;
 }
 
+void RFNoC_ProgrammableDevice_i::setPersonaMapping(const std::string& deviceId, RFNoC_Persona *persona)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    std::map<std::string, RFNoC_Persona *>::iterator it = this->deviceIdToPersona.find(deviceId);
+
+    if (it != this->deviceIdToPersona.end())
+    {
+        LOG_WARN(RFNoC_ProgrammableDevice_i, "Attempted to set persona mapping for persona which is already tracked: " << deviceId);
+
+        return;
+    }
+
+    this->deviceIdToPersona[deviceId] = persona;
+}
+
 CF::Properties* RFNoC_ProgrammableDevice_i::getTunerStatus(const std::string &allocation_id)
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
