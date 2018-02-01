@@ -36,4 +36,4 @@ RFNoC_ProgrammableDevice_CXXFLAGS = -Wall $(SOFTPKG_CFLAGS) $(PROJECTDEPS_CFLAGS
 RFNoC_ProgrammableDevice_LDFLAGS = -Wall $(redhawk_LDFLAGS_auto)
 
 create-rfnoc-node: install-am
-	../nodeconfig.py --inplace --clean --domainname=$(DOMAINNAME)
+	../nodeconfig.py --noinplace --clean --domainname=$(DOMAINNAME) --usrptype=$(USRPTYPE)

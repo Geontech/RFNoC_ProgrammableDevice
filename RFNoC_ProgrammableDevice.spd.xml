@@ -14,8 +14,8 @@
   <implementation id="cpp_x86">
     <description>The implementation contains descriptive information about the template for a software component.</description>
     <code type="Executable">
-      <localfile name="cpp_x86/RFNoC_ProgrammableDevice"/>
-      <entrypoint>cpp_x86/RFNoC_ProgrammableDevice</entrypoint>
+      <localfile name="/devices/RFNoC_ProgrammableDevice/cpp_x86/RFNoC_ProgrammableDevice"/>
+      <entrypoint>/devices/RFNoC_ProgrammableDevice/cpp_x86/RFNoC_ProgrammableDevice</entrypoint>
     </code>
     <compiler name="/usr/bin/gcc" version="4.4.7"/>
     <programminglanguage name="C++"/>
@@ -27,8 +27,8 @@
   <implementation id="cpp_armv7l">
     <description>The implementation contains descriptive information about the template for a software component.</description>
     <code type="Executable">
-      <localfile name="cpp_armv7l/RFNoC_ProgrammableDevice"/>
-      <entrypoint>cpp_armv7l/RFNoC_ProgrammableDevice</entrypoint>
+      <localfile name="/devices/RFNoC_ProgrammableDevice/cpp_armv7l/RFNoC_ProgrammableDevice"/>
+      <entrypoint>/devices/RFNoC_ProgrammableDevice/cpp_armv7l/RFNoC_ProgrammableDevice</entrypoint>
     </code>
     <compiler name="/usr/bin/gcc" version="4.4.7"/>
     <programminglanguage name="C++"/>
