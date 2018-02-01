@@ -4,6 +4,8 @@ bin_PROGRAMS = RFNoC_ProgrammableDevice
 
 xmldir = $(prefix)/dev/devices/RFNoC_ProgrammableDevice/
 dist_xml_DATA = ../RFNoC_ProgrammableDevice.scd.xml ../RFNoC_ProgrammableDevice.prf.xml ../RFNoC_ProgrammableDevice.spd.xml
+confdir = $(prefix)/dev/devices/RFNoC_ProgrammableDevice/
+dist_conf_SCRIPTS = ../nodeconfig.py
 ACLOCAL_AMFLAGS = -I m4 -I${OSSIEHOME}/share/aclocal/ossie
 AUTOMAKE_OPTIONS = subdir-objects
 
@@ -33,3 +35,5 @@ RFNoC_ProgrammableDevice_LDADD = $(SOFTPKG_LIBS) $(PROJECTDEPS_LIBS) $(BOOST_LDF
 RFNoC_ProgrammableDevice_CXXFLAGS = -Wall $(SOFTPKG_CFLAGS) $(PROJECTDEPS_CFLAGS) $(BOOST_CPPFLAGS) $(INTERFACEDEPS_CFLAGS) $(LIBRFNOCRH_CFLAGS) $(LIBUHD_CFLAGS) $(redhawk_INCLUDES_auto)
 RFNoC_ProgrammableDevice_LDFLAGS = -Wall $(redhawk_LDFLAGS_auto)
 
+create-rfnoc-node: install-am
+	../nodeconfig.py --inplace --clean --domainname=$(DOMAINNAME)
