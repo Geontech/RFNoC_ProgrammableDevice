@@ -1,4 +1,9 @@
+// Class Include
 #include "RFNoC_ProgrammableDevice.h"
+
+/*
+ * Public Method(s)
+ */
 
 CORBA::Boolean RFNoC_ProgrammableDevice_i::allocateCapacity(const CF::Properties& capacities)
     throw (
@@ -310,27 +315,561 @@ void RFNoC_ProgrammableDevice_i::deallocateCapacity(const CF::Properties& capaci
     LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Finished prog_base deallocation");
 }
 
-CF::Device::UsageType RFNoC_ProgrammableDevice_i::updateUsageState()
+/*
+ * Public frontend::digital_tuner_delegation Method(s)
+ */
+
+std::string RFNoC_ProgrammableDevice_i::getTunerType(const std::string& allocation_id)
 {
-    //LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
-    size_t tunerAllocated = 0;
-    for (size_t tuner_id = 0; tuner_id < tuner_allocation_ids.size(); tuner_id++) {
-        if (!tuner_allocation_ids[tuner_id].control_allocation_id.empty())
-            tunerAllocated++;
-    }
-    // If no tuners are allocated, device is idle
-    if (tunerAllocated == 0)
-        return CF::Device::IDLE;
-    // If all tuners are allocated, device is busy
-    if (tunerAllocated == tuner_allocation_ids.size())
-        return CF::Device::BUSY;
-    // Else, device is active
-    return CF::Device::ACTIVE;
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__ << " allocation_id=" << allocation_id);
+
+    long idx = getTunerMapping(allocation_id);
+    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
+    return frontend_tuner_status[idx].tuner_type;
 }
 
-void RFNoC_ProgrammableDevice_i::connectionTableChanged(const std::vector<connection_descriptor_struct> &oldValue, const std::vector<connection_descriptor_struct> &newValue)
+bool RFNoC_ProgrammableDevice_i::getTunerDeviceControl(const std::string& allocation_id)
 {
-    this->dataShort_out->updateConnectionFilter(newValue);
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__ << " allocation_id=" << allocation_id);
+
+    long idx = getTunerMapping(allocation_id);
+    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
+    if (this->getControlAllocationId(idx) == allocation_id)
+        return true;
+    return false;
+}
+
+std::string RFNoC_ProgrammableDevice_i::getTunerGroupId(const std::string& allocation_id)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__ << " allocation_id=" << allocation_id);
+
+    long idx = getTunerMapping(allocation_id);
+    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
+    return frontend_tuner_status[idx].group_id;
+}
+
+std::string RFNoC_ProgrammableDevice_i::getTunerRfFlowId(const std::string& allocation_id)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__ << " allocation_id=" << allocation_id);
+
+    long idx = getTunerMapping(allocation_id);
+    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
+    return frontend_tuner_status[idx].rf_flow_id;
+}
+
+CF::Properties* RFNoC_ProgrammableDevice_i::getTunerStatus(const std::string &allocation_id)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+
+    CF::Properties* tmpVal = new CF::Properties();
+    long tuner_id = getTunerMapping(allocation_id);
+    if (tuner_id < 0)
+    {
+        throw FRONTEND::FrontendException(("ERROR: ID: " + std::string(allocation_id) + " IS NOT ASSOCIATED WITH ANY TUNER!").c_str());
+    }
+    CORBA::Any prop;
+    prop <<= *(static_cast<frontend_tuner_status_struct_struct*>(&this->frontend_tuner_status[tuner_id]));
+    prop >>= tmpVal;
+
+    CF::Properties_var tmp = new CF::Properties(*tmpVal);
+    return tmp._retn();
+}
+
+void RFNoC_ProgrammableDevice_i::setTunerCenterFrequency(const std::string& allocation_id, double freq)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__ << " allocation_id=" << allocation_id << " freq=" << freq);
+
+    long idx = getTunerMapping(allocation_id);
+    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
+    if(allocation_id != getControlAllocationId(idx)){
+        std::ostringstream msg;
+        msg << "setTunerCenterFrequency|ID (" << allocation_id << ") does not have authorization to modify tuner.";
+        LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str());
+        throw FRONTEND::FrontendException(msg.str().c_str());
+    }
+
+    try {
+        try {
+            if (not frontend::validateRequest(70e6, 6000e6, freq)) {
+                std::ostringstream msg;
+                msg << "setTunerCenterFrequency|Invalid center frequency (" << freq <<")";
+                LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str() );
+                throw FRONTEND::BadParameterException(msg.str().c_str());
+            }
+        } catch (FRONTEND::BadParameterException) {
+            throw;
+        } catch (...) {
+            std::ostringstream msg;
+            msg << "setTunerCenterFrequency|Could not retrieve tuner_id to radio channel number mapping";
+            LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
+            throw FRONTEND::FrontendException(msg.str().c_str());
+        }
+
+        if (frontend_tuner_status[idx].tuner_type == "RX_DIGITIZER") {
+            allocationIdToRxMap::iterator it = this->allocationIdToRx.find(allocation_id);
+
+            if (it == this->allocationIdToRx.end()) {
+                std::ostringstream msg;
+                msg << "setTunerCenterFrequency|ID (" << allocation_id << ") does not map to RX object.";
+                LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
+                throw FRONTEND::BadParameterException(msg.str().c_str());
+            }
+
+            // If the freq has changed (change in stream) or the tuner is disabled, then set it as disabled
+            bool is_tuner_enabled = frontend_tuner_status[idx].enabled;
+
+            if (is_tuner_enabled && this->radio->get_rx_frequency(it->second->radioChannel) != freq) {
+                this->radio->set_rx_streamer(false, it->second->radioChannel);
+            }
+
+            // set hw with new value and update status
+            frontend_tuner_status[idx].center_frequency = this->radio->set_rx_frequency(freq, it->second->radioChannel);
+
+            it->second->sri = create(frontend_tuner_status[idx].stream_id, frontend_tuner_status[idx]);
+            it->second->sri.mode = 1;
+
+            // update status from hw
+            if (it->second->rxThread) {
+                it->second->updateSRI = true;
+            } else if (it->second->connected) {
+                this->dataShort_out->pushSRI(it->second->sri);
+            }
+
+            // re-enable
+            if (is_tuner_enabled) {
+                this->radio->set_rx_streamer(true, it->second->radioChannel);
+            }
+        } else if (frontend_tuner_status[idx].tuner_type == "TX") {
+            allocationIdToTxMap::iterator it = this->allocationIdToTx.find(allocation_id);
+
+            if (it == this->allocationIdToTx.end()) {
+                std::ostringstream msg;
+                msg << "setTunerCenterFrequency|ID (" << allocation_id << ") does not map to TX object.";
+                LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
+                throw FRONTEND::BadParameterException(msg.str().c_str());
+            }
+
+            // If the freq has changed (change in stream) or the tuner is disabled, then set it as disabled
+            bool is_tuner_enabled = frontend_tuner_status[idx].enabled;
+
+            if (is_tuner_enabled && this->radio->get_tx_frequency(it->second->radioChannel) != freq) {
+                this->radio->set_tx_streamer(false, it->second->radioChannel);
+            }
+
+            // set hw with new value and update status
+            frontend_tuner_status[idx].center_frequency = this->radio->set_tx_frequency(freq, it->second->radioChannel);
+
+            // re-enable
+            if (is_tuner_enabled) {
+                this->radio->set_tx_streamer(true, it->second->radioChannel);
+            }
+        } else {
+            std::ostringstream msg;
+            msg << "setTunerCenterFrequency|Invalid tuner type. Must be RX_DIGITIZER or TX";
+            LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
+            throw FRONTEND::BadParameterException(msg.str().c_str());
+        }
+    } catch (std::exception& e) {
+        std::ostringstream msg;
+        msg << "setTunerCenterFrequency|Exception: " << e.what();
+        LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str());
+        throw FRONTEND::FrontendException(msg.str().c_str());
+    }
+}
+
+double RFNoC_ProgrammableDevice_i::getTunerCenterFrequency(const std::string& allocation_id)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
+
+    long idx = getTunerMapping(allocation_id);
+    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
+    return frontend_tuner_status[idx].center_frequency;
+}
+
+void RFNoC_ProgrammableDevice_i::setTunerBandwidth(const std::string& allocation_id, double bw)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
+    throw FRONTEND::NotSupportedException("setTunerBandwidth not supported");
+}
+
+double RFNoC_ProgrammableDevice_i::getTunerBandwidth(const std::string& allocation_id)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
+
+    long idx = getTunerMapping(allocation_id);
+    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
+    return frontend_tuner_status[idx].bandwidth;
+}
+
+void RFNoC_ProgrammableDevice_i::setTunerAgcEnable(const std::string& allocation_id, bool enable)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
+    throw FRONTEND::NotSupportedException("setTunerAgcEnable not supported");
+}
+
+bool RFNoC_ProgrammableDevice_i::getTunerAgcEnable(const std::string& allocation_id)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
+    throw FRONTEND::NotSupportedException("getTunerAgcEnable not supported");
+}
+
+void RFNoC_ProgrammableDevice_i::setTunerGain(const std::string& allocation_id, float gain)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__ << " allocation_id=" << allocation_id << " gain=" << gain);
+
+    long idx = getTunerMapping(allocation_id);
+    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
+    if(allocation_id != getControlAllocationId(idx)){
+        std::ostringstream msg;
+        msg << "setTunerGain|ID (" << allocation_id << ") does not have authorization to modify tuner.";
+        LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str());
+        throw FRONTEND::FrontendException(msg.str().c_str());
+    }
+
+    try {
+        try {
+            if (not frontend::validateRequest(0, 89.5, gain)) {
+                std::ostringstream msg;
+                msg << "setTunerGain|Invalid gain (" << gain <<")";
+                LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str() );
+                throw FRONTEND::BadParameterException(msg.str().c_str());
+            }
+        } catch (FRONTEND::BadParameterException) {
+            throw;
+        } catch (...) {
+            std::ostringstream msg;
+            msg << "setTunerGain|Could not retrieve tuner_id to radio channel number mapping";
+            LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
+            throw FRONTEND::FrontendException(msg.str().c_str());
+        }
+
+        if (frontend_tuner_status[idx].tuner_type == "RX_DIGITIZER") {
+            allocationIdToRxMap::iterator it = this->allocationIdToRx.find(allocation_id);
+
+            if (it == this->allocationIdToRx.end()) {
+                std::ostringstream msg;
+                msg << "setTunerGain|ID (" << allocation_id << ") does not map to RX object.";
+                LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
+                throw FRONTEND::BadParameterException(msg.str().c_str());
+            }
+
+            // If the freq has changed (change in stream) or the tuner is disabled, then set it as disabled
+            bool is_tuner_enabled = frontend_tuner_status[idx].enabled;
+
+            if (is_tuner_enabled && this->radio->get_rx_gain(it->second->radioChannel) != gain) {
+                this->radio->set_rx_streamer(false, it->second->radioChannel);
+            }
+
+            // set hw with new value and update status
+            frontend_tuner_status[idx].gain = this->radio->set_rx_gain(gain, it->second->radioChannel);
+
+            // re-enable
+            if (is_tuner_enabled) {
+                this->radio->set_rx_streamer(true, it->second->radioChannel);
+            }
+        } else if (frontend_tuner_status[idx].tuner_type == "TX") {
+            allocationIdToTxMap::iterator it = this->allocationIdToTx.find(allocation_id);
+
+            if (it == this->allocationIdToTx.end()) {
+                std::ostringstream msg;
+                msg << "setTunerGain|ID (" << allocation_id << ") does not map to TX object.";
+                LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
+                throw FRONTEND::BadParameterException(msg.str().c_str());
+            }
+
+            // If the freq has changed (change in stream) or the tuner is disabled, then set it as disabled
+            bool is_tuner_enabled = frontend_tuner_status[idx].enabled;
+
+            if (is_tuner_enabled && this->radio->get_tx_gain(it->second->radioChannel) != gain) {
+                this->radio->set_tx_streamer(false, it->second->radioChannel);
+            }
+
+            // set hw with new value and update status
+            frontend_tuner_status[idx].gain = this->radio->set_tx_gain(gain, it->second->radioChannel);
+
+            // re-enable
+            if (is_tuner_enabled) {
+                this->radio->set_tx_streamer(true, it->second->radioChannel);
+            }
+        } else {
+            std::ostringstream msg;
+            msg << "setTunerGain|Invalid tuner type. Must be RX_DIGITIZER or TX";
+            LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
+            throw FRONTEND::BadParameterException(msg.str().c_str());
+        }
+    } catch (std::exception& e) {
+        std::ostringstream msg;
+        msg << "setTunerGain|Exception: " << e.what();
+        LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str());
+        throw FRONTEND::FrontendException(msg.str().c_str());
+    }
+}
+
+float RFNoC_ProgrammableDevice_i::getTunerGain(const std::string& allocation_id)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
+    long idx = getTunerMapping(allocation_id);
+    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
+    return frontend_tuner_status[idx].gain;
+}
+
+void RFNoC_ProgrammableDevice_i::setTunerReferenceSource(const std::string& allocation_id, long source)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
+    throw FRONTEND::NotSupportedException("setTunerReferenceSource not supported");
+}
+
+long RFNoC_ProgrammableDevice_i::getTunerReferenceSource(const std::string& allocation_id)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
+    throw FRONTEND::NotSupportedException("getTunerReferenceSource not supported");
+}
+
+void RFNoC_ProgrammableDevice_i::setTunerEnable(const std::string& allocation_id, bool enable)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
+
+    long idx = getTunerMapping(allocation_id);
+    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
+    if(allocation_id != getControlAllocationId(idx)){
+        std::ostringstream msg;
+        msg << "setTunerEnable|ID (" << allocation_id << ") does not have authorization to modify tuner.";
+        LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str());
+        throw FRONTEND::FrontendException(msg.str().c_str());
+    }
+
+    if (frontend_tuner_status[idx].tuner_type == "RX_DIGITIZER") {
+        allocationIdToRxMap::iterator it = this->allocationIdToRx.find(allocation_id);
+
+        if (it == this->allocationIdToRx.end()) {
+            std::ostringstream msg;
+            msg << "setTunerEnable|ID (" << allocation_id << ") does not map to RX object.";
+            LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
+            throw FRONTEND::BadParameterException(msg.str().c_str());
+        }
+
+        this->radio->set_rx_streamer(enable, it->second->radioChannel);
+    } else if (frontend_tuner_status[idx].tuner_type == "TX") {
+        allocationIdToTxMap::iterator it = this->allocationIdToTx.find(allocation_id);
+
+        if (it == this->allocationIdToTx.end()) {
+            std::ostringstream msg;
+            msg << "setTunerEnable|ID (" << allocation_id << ") does not map to TX object.";
+            LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
+            throw FRONTEND::BadParameterException(msg.str().c_str());
+        }
+
+        this->radio->set_tx_streamer(enable, it->second->radioChannel);
+    } else {
+        std::ostringstream msg;
+        msg << "setTunerEnable|Invalid tuner type. Must be RX_DIGITIZER or TX";
+        LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
+        throw FRONTEND::BadParameterException(msg.str().c_str());
+    }
+
+    frontend_tuner_status[idx].enabled = enable;
+}
+
+bool RFNoC_ProgrammableDevice_i::getTunerEnable(const std::string& allocation_id)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
+
+    long idx = getTunerMapping(allocation_id);
+    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
+    return frontend_tuner_status[idx].enabled;
+}
+
+void RFNoC_ProgrammableDevice_i::setTunerOutputSampleRate(const std::string& allocation_id, double sr)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__ << " allocation_id=" << allocation_id << " sr=" << sr);
+
+    long idx = getTunerMapping(allocation_id);
+    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
+    if(allocation_id != getControlAllocationId(idx)){
+        std::ostringstream msg;
+        msg << "setTunerOutputSampleRate|ID (" << allocation_id << ") does not have authorization to modify tuner.";
+        LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str());
+        throw FRONTEND::FrontendException(msg.str().c_str());
+    }
+
+    try {
+        try {
+            if (not frontend::validateRequest(125e3, 16e6, sr)) {
+                std::ostringstream msg;
+                msg << "setTunerOutputSampleRate|Invalid sample rate (" << sr <<")";
+                LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str() );
+                throw FRONTEND::BadParameterException(msg.str().c_str());
+            }
+        } catch (FRONTEND::BadParameterException) {
+            throw;
+        } catch (...) {
+            std::ostringstream msg;
+            msg << "setTunerOutputSampleRate|Could not retrieve tuner_id to radio channel number mapping";
+            LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
+            throw FRONTEND::FrontendException(msg.str().c_str());
+        }
+
+        if (frontend_tuner_status[idx].tuner_type == "RX_DIGITIZER") {
+            allocationIdToRxMap::iterator it = this->allocationIdToRx.find(allocation_id);
+
+            if (it == this->allocationIdToRx.end()) {
+                std::ostringstream msg;
+                msg << "setTunerOutputSampleRate|ID (" << allocation_id << ") does not map to RX object.";
+                LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
+                throw FRONTEND::BadParameterException(msg.str().c_str());
+            }
+
+            // If the freq has changed (change in stream) or the tuner is disabled, then set it as disabled
+            bool is_tuner_enabled = frontend_tuner_status[idx].enabled;
+
+            if (is_tuner_enabled) {
+                it->second->ddc->set_rx_streamer(false, it->second->ddcPort);
+            }
+
+            uhd::rfnoc::ddc_block_ctrl::sptr ddc = it->second->ddc;
+            size_t ddcPort = it->second->ddcPort;
+
+            uhd::device_addr_t args;
+
+            args["freq"] = "0.0";
+            args["input_rate"] = boost::lexical_cast<std::string>(this->radio->get_output_samp_rate(it->second->radioChannel));
+            args["output_rate"] = boost::lexical_cast<std::string>(sr);
+
+            try {
+                ddc->set_args(args, ddcPort);
+            } catch(uhd::value_error &e) {
+                std::ostringstream msg;
+                msg << "setTunerOutputSampleRate|Exception: " << e.what();
+                LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
+                throw FRONTEND::BadParameterException(msg.str().c_str());
+            } catch(...) {
+                throw;
+            }
+
+            // Get the actual output rate of the DDC
+            try {
+                std::string sampleRateString;
+
+                sampleRateString = ddc->get_arg("output_rate", ddcPort);
+
+                frontend_tuner_status[idx].sample_rate = boost::lexical_cast<double>(sampleRateString);
+            } catch(...) {
+                throw;
+            }
+
+            it->second->sri = create(frontend_tuner_status[idx].stream_id, frontend_tuner_status[idx]);
+            it->second->sri.mode = 1;
+
+            // update status from hw
+            if (it->second->rxThread) {
+                it->second->updateSRI = true;
+            } else if (it->second->connected) {
+                this->dataShort_out->pushSRI(it->second->sri);
+            }
+
+            // re-enable
+            if (is_tuner_enabled) {
+                it->second->ddc->set_rx_streamer(true, it->second->ddcPort);
+            }
+        } else if (frontend_tuner_status[idx].tuner_type == "TX") {
+            allocationIdToTxMap::iterator it = this->allocationIdToTx.find(allocation_id);
+
+            if (it == this->allocationIdToTx.end()) {
+                std::ostringstream msg;
+                msg << "setTunerOutputSampleRate|ID (" << allocation_id << ") does not map to TX object.";
+                LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
+                throw FRONTEND::BadParameterException(msg.str().c_str());
+            }
+
+            // If the freq has changed (change in stream) or the tuner is disabled, then set it as disabled
+            bool is_tuner_enabled = frontend_tuner_status[idx].enabled;
+
+            if (is_tuner_enabled) {
+                it->second->duc->set_tx_streamer(false, it->second->ducPort);
+            }
+
+            uhd::rfnoc::duc_block_ctrl::sptr duc = it->second->duc;
+            size_t ducPort = it->second->ducPort;
+
+            uhd::device_addr_t args;
+
+            args["input_rate"] = boost::lexical_cast<std::string>(sr);
+            args["output_rate"] = boost::lexical_cast<std::string>(this->radio->get_input_samp_rate(it->second->radioChannel));
+
+            try {
+                duc->set_args(args, ducPort);
+            } catch(uhd::value_error &e) {
+                std::ostringstream msg;
+                msg << "setTunerOutputSampleRate|Exception: " << e.what();
+                LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
+                throw FRONTEND::BadParameterException(msg.str().c_str());
+            } catch(...) {
+                throw;
+            }
+
+            // Get the actual output rate of the DUC
+            try {
+                std::string sampleRateString;
+
+                sampleRateString = duc->get_arg("input_rate", ducPort);
+
+                frontend_tuner_status[idx].sample_rate = boost::lexical_cast<double>(sampleRateString);
+            } catch(...) {
+                throw;
+            }
+
+            // re-enable
+            if (is_tuner_enabled) {
+                it->second->duc->set_tx_streamer(true, it->second->ducPort);
+            }
+        } else {
+            std::ostringstream msg;
+            msg << "setTunerGain|Invalid tuner type. Must be RX_DIGITIZER or TX";
+            LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
+            throw FRONTEND::BadParameterException(msg.str().c_str());
+        }
+    } catch (std::exception& e) {
+        std::ostringstream msg;
+        msg << "setTunerGain|Exception: " << e.what();
+        LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str());
+        throw FRONTEND::FrontendException(msg.str().c_str());
+    }
+}
+
+double RFNoC_ProgrammableDevice_i::getTunerOutputSampleRate(const std::string& allocation_id)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
+
+    long idx = getTunerMapping(allocation_id);
+    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
+    LOG_DEBUG(RFNoC_ProgrammableDevice_i,"getTunerOutputSampleRate|TUNER_SR=" << frontend_tuner_status[idx].sample_rate);
+    return frontend_tuner_status[idx].sample_rate;
+}
+
+/*
+ * Protected frontend::digital_tuner_delegation Method(s)
+ */
+
+std::string RFNoC_ProgrammableDevice_i::getControlAllocationId(size_t tuner_id)
+{
+    return tuner_allocation_ids[tuner_id].control_allocation_id;
+}
+
+std::vector<std::string> RFNoC_ProgrammableDevice_i::getListenerAllocationIds(size_t tuner_id)
+{
+    return tuner_allocation_ids[tuner_id].listener_allocation_ids;
+}
+
+long RFNoC_ProgrammableDevice_i::getTunerMapping(std::string allocation_id)
+{
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
+    long NO_VALID_TUNER = -1;
+
+    string_number_mapping::iterator iter = allocation_id_to_tuner_id.find(allocation_id);
+    if (iter != allocation_id_to_tuner_id.end())
+        return iter->second;
+
+    return NO_VALID_TUNER;
 }
 
 std::string RFNoC_ProgrammableDevice_i::createAllocationIdCsv(size_t tuner_id)
@@ -346,95 +885,6 @@ std::string RFNoC_ProgrammableDevice_i::createAllocationIdCsv(size_t tuner_id)
     if(!alloc_id_csv.empty())
         alloc_id_csv.erase(alloc_id_csv.size()-1);
     return alloc_id_csv;
-}
-
-std::string RFNoC_ProgrammableDevice_i::getControlAllocationId(size_t tuner_id)
-{
-    return tuner_allocation_ids[tuner_id].control_allocation_id;
-}
-
-std::vector<std::string> RFNoC_ProgrammableDevice_i::getListenerAllocationIds(size_t tuner_id)
-{
-    return tuner_allocation_ids[tuner_id].listener_allocation_ids;
-}
-
-bool RFNoC_ProgrammableDevice_i::enableTuner(size_t tuner_id, bool enable)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
-
-    bool prev_enabled = frontend_tuner_status[tuner_id].enabled;
-
-    // If going from disabled to enabled
-    if (!prev_enabled && enable) {
-        deviceEnable(frontend_tuner_status[tuner_id], tuner_id);
-    }
-
-    // If going from enabled to disabled
-    if (prev_enabled && !enable) {
-
-        deviceDisable(frontend_tuner_status[tuner_id], tuner_id);
-    }
-
-    return true;
-}
-
-bool RFNoC_ProgrammableDevice_i::listenerRequestValidation(frontend_tuner_allocation_struct &request, size_t tuner_id)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
-
-    // ensure requested values are non-negative
-    if(frontend::floatingPointCompare(request.center_frequency,0)<0 || frontend::floatingPointCompare(request.bandwidth,0)<0 || frontend::floatingPointCompare(request.sample_rate,0)<0 || frontend::floatingPointCompare(request.bandwidth_tolerance,0)<0 || frontend::floatingPointCompare(request.sample_rate_tolerance,0)<0)
-        return false;
-
-    // ensure lower end of requested band fits
-    //if((request.center_frequency - (request.bandwidth*0.5)) < (frontend_tuner_status[tuner_id].center_frequency - (frontend_tuner_status[tuner_id].bandwidth*0.5))){
-    if( frontend::floatingPointCompare((request.center_frequency-(request.bandwidth*0.5)),(frontend_tuner_status[tuner_id].center_frequency-(frontend_tuner_status[tuner_id].bandwidth*0.5))) < 0 ){
-        LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__ << " FAILED LOWER END TEST");
-        return false;
-    }
-
-    // ensure upper end of requested band fits
-    //if((request.center_frequency + (request.bandwidth*0.5)) > (frontend_tuner_status[tuner_id].center_frequency + (frontend_tuner_status[tuner_id].bandwidth*0.5))){
-    if( frontend::floatingPointCompare((request.center_frequency + (request.bandwidth*0.5)),(frontend_tuner_status[tuner_id].center_frequency + (frontend_tuner_status[tuner_id].bandwidth*0.5))) > 0 ){
-        LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__ << " FAILED UPPER END TEST");
-        return false;
-    }
-
-    // ensure tuner bandwidth meets requested tolerance
-    //if(request.bandwidth > frontend_tuner_status[tuner_id].bandwidth)
-    if( frontend::floatingPointCompare(request.bandwidth,frontend_tuner_status[tuner_id].bandwidth) > 0 )
-        return false;
-
-    //if(request.bandwidth != 0 && (request.bandwidth+(request.bandwidth*request.bandwidth_tolerance/100)) < frontend_tuner_status[tuner_id].bandwidth)
-    if( frontend::floatingPointCompare(request.bandwidth,0)!=0 && frontend::floatingPointCompare((request.bandwidth+(request.bandwidth*request.bandwidth_tolerance/100)),frontend_tuner_status[tuner_id].bandwidth) < 0 )
-        return false;
-
-    // ensure tuner sample rate meets requested tolerance
-    //if(request.sample_rate > frontend_tuner_status[tuner_id].sample_rate)
-    if( frontend::floatingPointCompare(request.sample_rate,frontend_tuner_status[tuner_id].sample_rate) > 0 )
-        return false;
-
-    //if(request.sample_rate != 0 && (request.sample_rate+(request.sample_rate*request.sample_rate_tolerance/100)) < frontend_tuner_status[tuner_id].sample_rate)
-    if(frontend::floatingPointCompare(request.sample_rate,0)!=0 && frontend::floatingPointCompare((request.sample_rate+(request.sample_rate*request.sample_rate_tolerance/100)),frontend_tuner_status[tuner_id].sample_rate) < 0 )
-        return false;
-
-    return true;
-};
-
-////////////////////////////
-//        MAPPING         //
-////////////////////////////
-
-long RFNoC_ProgrammableDevice_i::getTunerMapping(std::string allocation_id)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
-    long NO_VALID_TUNER = -1;
-
-    string_number_mapping::iterator iter = allocation_id_to_tuner_id.find(allocation_id);
-    if (iter != allocation_id_to_tuner_id.end())
-        return iter->second;
-
-    return NO_VALID_TUNER;
 }
 
 bool RFNoC_ProgrammableDevice_i::removeTunerMapping(size_t tuner_id, std::string allocation_id)
@@ -609,514 +1059,100 @@ void RFNoC_ProgrammableDevice_i::setNumChannels(size_t num, std::string tuner_ty
     }
 }
 
-/*************************************************************
-Functions servicing the tuner control port
-*************************************************************/
-std::string RFNoC_ProgrammableDevice_i::getTunerType(const std::string& allocation_id)
+bool RFNoC_ProgrammableDevice_i::enableTuner(size_t tuner_id, bool enable)
 {
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__ << " allocation_id=" << allocation_id);
+    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
 
-    long idx = getTunerMapping(allocation_id);
-    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
-    return frontend_tuner_status[idx].tuner_type;
-}
+    bool prev_enabled = frontend_tuner_status[tuner_id].enabled;
 
-bool RFNoC_ProgrammableDevice_i::getTunerDeviceControl(const std::string& allocation_id)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__ << " allocation_id=" << allocation_id);
-
-    long idx = getTunerMapping(allocation_id);
-    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
-    if (this->getControlAllocationId(idx) == allocation_id)
-        return true;
-    return false;
-}
-
-std::string RFNoC_ProgrammableDevice_i::getTunerGroupId(const std::string& allocation_id)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__ << " allocation_id=" << allocation_id);
-
-    long idx = getTunerMapping(allocation_id);
-    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
-    return frontend_tuner_status[idx].group_id;
-}
-
-std::string RFNoC_ProgrammableDevice_i::getTunerRfFlowId(const std::string& allocation_id)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__ << " allocation_id=" << allocation_id);
-
-    long idx = getTunerMapping(allocation_id);
-    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
-    return frontend_tuner_status[idx].rf_flow_id;
-}
-
-void RFNoC_ProgrammableDevice_i::setTunerCenterFrequency(const std::string& allocation_id, double freq)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__ << " allocation_id=" << allocation_id << " freq=" << freq);
-
-    long idx = getTunerMapping(allocation_id);
-    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
-    if(allocation_id != getControlAllocationId(idx)){
-        std::ostringstream msg;
-        msg << "setTunerCenterFrequency|ID (" << allocation_id << ") does not have authorization to modify tuner.";
-        LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str());
-        throw FRONTEND::FrontendException(msg.str().c_str());
+    // If going from disabled to enabled
+    if (!prev_enabled && enable) {
+        deviceEnable(frontend_tuner_status[tuner_id], tuner_id);
     }
 
-    try {
-        try {
-            if (not frontend::validateRequest(70e6, 6000e6, freq)) {
-                std::ostringstream msg;
-                msg << "setTunerCenterFrequency|Invalid center frequency (" << freq <<")";
-                LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str() );
-                throw FRONTEND::BadParameterException(msg.str().c_str());
-            }
-        } catch (FRONTEND::BadParameterException) {
-            throw;
-        } catch (...) {
-            std::ostringstream msg;
-            msg << "setTunerCenterFrequency|Could not retrieve tuner_id to radio channel number mapping";
-            LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
-            throw FRONTEND::FrontendException(msg.str().c_str());
-        }
+    // If going from enabled to disabled
+    if (prev_enabled && !enable) {
 
-        if (frontend_tuner_status[idx].tuner_type == "RX_DIGITIZER") {
-            std::map<std::string, RxObject *>::iterator it = this->allocationIDToRx.find(allocation_id);
-
-            if (it == this->allocationIDToRx.end()) {
-                std::ostringstream msg;
-                msg << "setTunerCenterFrequency|ID (" << allocation_id << ") does not map to RX object.";
-                LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
-                throw FRONTEND::BadParameterException(msg.str().c_str());
-            }
-
-            // If the freq has changed (change in stream) or the tuner is disabled, then set it as disabled
-            bool is_tuner_enabled = frontend_tuner_status[idx].enabled;
-
-            if (is_tuner_enabled && this->radio->get_rx_frequency(it->second->radioChannel) != freq) {
-                this->radio->set_rx_streamer(false, it->second->radioChannel);
-            }
-
-            // set hw with new value and update status
-            frontend_tuner_status[idx].center_frequency = this->radio->set_rx_frequency(freq, it->second->radioChannel);
-
-            it->second->sri = create(frontend_tuner_status[idx].stream_id, frontend_tuner_status[idx]);
-            it->second->sri.mode = 1;
-
-            // update status from hw
-            if (it->second->rxThread) {
-                it->second->updateSRI = true;
-            } else if (it->second->connected) {
-                this->dataShort_out->pushSRI(it->second->sri);
-            }
-
-            // re-enable
-            if (is_tuner_enabled) {
-                this->radio->set_rx_streamer(true, it->second->radioChannel);
-            }
-        } else if (frontend_tuner_status[idx].tuner_type == "TX") {
-            std::map<std::string, TxObject *>::iterator it = this->allocationIDToTx.find(allocation_id);
-
-            if (it == this->allocationIDToTx.end()) {
-                std::ostringstream msg;
-                msg << "setTunerCenterFrequency|ID (" << allocation_id << ") does not map to TX object.";
-                LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
-                throw FRONTEND::BadParameterException(msg.str().c_str());
-            }
-
-            // If the freq has changed (change in stream) or the tuner is disabled, then set it as disabled
-            bool is_tuner_enabled = frontend_tuner_status[idx].enabled;
-
-            if (is_tuner_enabled && this->radio->get_tx_frequency(it->second->radioChannel) != freq) {
-                this->radio->set_tx_streamer(false, it->second->radioChannel);
-            }
-
-            // set hw with new value and update status
-            frontend_tuner_status[idx].center_frequency = this->radio->set_tx_frequency(freq, it->second->radioChannel);
-
-            // re-enable
-            if (is_tuner_enabled) {
-                this->radio->set_tx_streamer(true, it->second->radioChannel);
-            }
-        } else {
-            std::ostringstream msg;
-            msg << "setTunerCenterFrequency|Invalid tuner type. Must be RX_DIGITIZER or TX";
-            LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
-            throw FRONTEND::BadParameterException(msg.str().c_str());
-        }
-    } catch (std::exception& e) {
-        std::ostringstream msg;
-        msg << "setTunerCenterFrequency|Exception: " << e.what();
-        LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str());
-        throw FRONTEND::FrontendException(msg.str().c_str());
-    }
-}
-
-double RFNoC_ProgrammableDevice_i::getTunerCenterFrequency(const std::string& allocation_id)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
-
-    long idx = getTunerMapping(allocation_id);
-    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
-    return frontend_tuner_status[idx].center_frequency;
-}
-
-void RFNoC_ProgrammableDevice_i::setTunerBandwidth(const std::string& allocation_id, double bw)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
-    throw FRONTEND::NotSupportedException("setTunerBandwidth not supported");
-}
-
-double RFNoC_ProgrammableDevice_i::getTunerBandwidth(const std::string& allocation_id)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
-
-    long idx = getTunerMapping(allocation_id);
-    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
-    return frontend_tuner_status[idx].bandwidth;
-}
-
-void RFNoC_ProgrammableDevice_i::setTunerAgcEnable(const std::string& allocation_id, bool enable)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
-    throw FRONTEND::NotSupportedException("setTunerAgcEnable not supported");
-}
-
-bool RFNoC_ProgrammableDevice_i::getTunerAgcEnable(const std::string& allocation_id)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
-    throw FRONTEND::NotSupportedException("getTunerAgcEnable not supported");
-}
-
-void RFNoC_ProgrammableDevice_i::setTunerGain(const std::string& allocation_id, float gain)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__ << " allocation_id=" << allocation_id << " gain=" << gain);
-
-    long idx = getTunerMapping(allocation_id);
-    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
-    if(allocation_id != getControlAllocationId(idx)){
-        std::ostringstream msg;
-        msg << "setTunerGain|ID (" << allocation_id << ") does not have authorization to modify tuner.";
-        LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str());
-        throw FRONTEND::FrontendException(msg.str().c_str());
+        deviceDisable(frontend_tuner_status[tuner_id], tuner_id);
     }
 
-    try {
-        try {
-            if (not frontend::validateRequest(0, 89.5, gain)) {
-                std::ostringstream msg;
-                msg << "setTunerGain|Invalid gain (" << gain <<")";
-                LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str() );
-                throw FRONTEND::BadParameterException(msg.str().c_str());
-            }
-        } catch (FRONTEND::BadParameterException) {
-            throw;
-        } catch (...) {
-            std::ostringstream msg;
-            msg << "setTunerGain|Could not retrieve tuner_id to radio channel number mapping";
-            LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
-            throw FRONTEND::FrontendException(msg.str().c_str());
-        }
-
-        if (frontend_tuner_status[idx].tuner_type == "RX_DIGITIZER") {
-            std::map<std::string, RxObject *>::iterator it = this->allocationIDToRx.find(allocation_id);
-
-            if (it == this->allocationIDToRx.end()) {
-                std::ostringstream msg;
-                msg << "setTunerGain|ID (" << allocation_id << ") does not map to RX object.";
-                LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
-                throw FRONTEND::BadParameterException(msg.str().c_str());
-            }
-
-            // If the freq has changed (change in stream) or the tuner is disabled, then set it as disabled
-            bool is_tuner_enabled = frontend_tuner_status[idx].enabled;
-
-            if (is_tuner_enabled && this->radio->get_rx_gain(it->second->radioChannel) != gain) {
-                this->radio->set_rx_streamer(false, it->second->radioChannel);
-            }
-
-            // set hw with new value and update status
-            frontend_tuner_status[idx].gain = this->radio->set_rx_gain(gain, it->second->radioChannel);
-
-            // re-enable
-            if (is_tuner_enabled) {
-                this->radio->set_rx_streamer(true, it->second->radioChannel);
-            }
-        } else if (frontend_tuner_status[idx].tuner_type == "TX") {
-            std::map<std::string, TxObject *>::iterator it = this->allocationIDToTx.find(allocation_id);
-
-            if (it == this->allocationIDToTx.end()) {
-                std::ostringstream msg;
-                msg << "setTunerGain|ID (" << allocation_id << ") does not map to TX object.";
-                LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
-                throw FRONTEND::BadParameterException(msg.str().c_str());
-            }
-
-            // If the freq has changed (change in stream) or the tuner is disabled, then set it as disabled
-            bool is_tuner_enabled = frontend_tuner_status[idx].enabled;
-
-            if (is_tuner_enabled && this->radio->get_tx_gain(it->second->radioChannel) != gain) {
-                this->radio->set_tx_streamer(false, it->second->radioChannel);
-            }
-
-            // set hw with new value and update status
-            frontend_tuner_status[idx].gain = this->radio->set_tx_gain(gain, it->second->radioChannel);
-
-            // re-enable
-            if (is_tuner_enabled) {
-                this->radio->set_tx_streamer(true, it->second->radioChannel);
-            }
-        } else {
-            std::ostringstream msg;
-            msg << "setTunerGain|Invalid tuner type. Must be RX_DIGITIZER or TX";
-            LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
-            throw FRONTEND::BadParameterException(msg.str().c_str());
-        }
-    } catch (std::exception& e) {
-        std::ostringstream msg;
-        msg << "setTunerGain|Exception: " << e.what();
-        LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str());
-        throw FRONTEND::FrontendException(msg.str().c_str());
-    }
+    return true;
 }
 
-float RFNoC_ProgrammableDevice_i::getTunerGain(const std::string& allocation_id)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
-    long idx = getTunerMapping(allocation_id);
-    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
-    return frontend_tuner_status[idx].gain;
-}
-
-void RFNoC_ProgrammableDevice_i::setTunerReferenceSource(const std::string& allocation_id, long source)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
-    throw FRONTEND::NotSupportedException("setTunerReferenceSource not supported");
-}
-
-long RFNoC_ProgrammableDevice_i::getTunerReferenceSource(const std::string& allocation_id)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
-    throw FRONTEND::NotSupportedException("getTunerReferenceSource not supported");
-}
-
-void RFNoC_ProgrammableDevice_i::setTunerEnable(const std::string& allocation_id, bool enable)
+bool RFNoC_ProgrammableDevice_i::listenerRequestValidation(frontend_tuner_allocation_struct &request, size_t tuner_id)
 {
     LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
 
-    long idx = getTunerMapping(allocation_id);
-    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
-    if(allocation_id != getControlAllocationId(idx)){
-        std::ostringstream msg;
-        msg << "setTunerEnable|ID (" << allocation_id << ") does not have authorization to modify tuner.";
-        LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str());
-        throw FRONTEND::FrontendException(msg.str().c_str());
+    // ensure requested values are non-negative
+    if(frontend::floatingPointCompare(request.center_frequency,0)<0 || frontend::floatingPointCompare(request.bandwidth,0)<0 || frontend::floatingPointCompare(request.sample_rate,0)<0 || frontend::floatingPointCompare(request.bandwidth_tolerance,0)<0 || frontend::floatingPointCompare(request.sample_rate_tolerance,0)<0)
+        return false;
+
+    // ensure lower end of requested band fits
+    //if((request.center_frequency - (request.bandwidth*0.5)) < (frontend_tuner_status[tuner_id].center_frequency - (frontend_tuner_status[tuner_id].bandwidth*0.5))){
+    if( frontend::floatingPointCompare((request.center_frequency-(request.bandwidth*0.5)),(frontend_tuner_status[tuner_id].center_frequency-(frontend_tuner_status[tuner_id].bandwidth*0.5))) < 0 ){
+        LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__ << " FAILED LOWER END TEST");
+        return false;
     }
 
-    if (frontend_tuner_status[idx].tuner_type == "RX_DIGITIZER") {
-        std::map<std::string, RxObject *>::iterator it = this->allocationIDToRx.find(allocation_id);
-
-        if (it == this->allocationIDToRx.end()) {
-            std::ostringstream msg;
-            msg << "setTunerEnable|ID (" << allocation_id << ") does not map to RX object.";
-            LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
-            throw FRONTEND::BadParameterException(msg.str().c_str());
-        }
-
-        this->radio->set_rx_streamer(enable, it->second->radioChannel);
-    } else if (frontend_tuner_status[idx].tuner_type == "TX") {
-        std::map<std::string, TxObject *>::iterator it = this->allocationIDToTx.find(allocation_id);
-
-        if (it == this->allocationIDToTx.end()) {
-            std::ostringstream msg;
-            msg << "setTunerEnable|ID (" << allocation_id << ") does not map to TX object.";
-            LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
-            throw FRONTEND::BadParameterException(msg.str().c_str());
-        }
-
-        this->radio->set_tx_streamer(enable, it->second->radioChannel);
-    } else {
-        std::ostringstream msg;
-        msg << "setTunerEnable|Invalid tuner type. Must be RX_DIGITIZER or TX";
-        LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
-        throw FRONTEND::BadParameterException(msg.str().c_str());
+    // ensure upper end of requested band fits
+    //if((request.center_frequency + (request.bandwidth*0.5)) > (frontend_tuner_status[tuner_id].center_frequency + (frontend_tuner_status[tuner_id].bandwidth*0.5))){
+    if( frontend::floatingPointCompare((request.center_frequency + (request.bandwidth*0.5)),(frontend_tuner_status[tuner_id].center_frequency + (frontend_tuner_status[tuner_id].bandwidth*0.5))) > 0 ){
+        LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__ << " FAILED UPPER END TEST");
+        return false;
     }
 
-    frontend_tuner_status[idx].enabled = enable;
+    // ensure tuner bandwidth meets requested tolerance
+    //if(request.bandwidth > frontend_tuner_status[tuner_id].bandwidth)
+    if( frontend::floatingPointCompare(request.bandwidth,frontend_tuner_status[tuner_id].bandwidth) > 0 )
+        return false;
+
+    //if(request.bandwidth != 0 && (request.bandwidth+(request.bandwidth*request.bandwidth_tolerance/100)) < frontend_tuner_status[tuner_id].bandwidth)
+    if( frontend::floatingPointCompare(request.bandwidth,0)!=0 && frontend::floatingPointCompare((request.bandwidth+(request.bandwidth*request.bandwidth_tolerance/100)),frontend_tuner_status[tuner_id].bandwidth) < 0 )
+        return false;
+
+    // ensure tuner sample rate meets requested tolerance
+    //if(request.sample_rate > frontend_tuner_status[tuner_id].sample_rate)
+    if( frontend::floatingPointCompare(request.sample_rate,frontend_tuner_status[tuner_id].sample_rate) > 0 )
+        return false;
+
+    //if(request.sample_rate != 0 && (request.sample_rate+(request.sample_rate*request.sample_rate_tolerance/100)) < frontend_tuner_status[tuner_id].sample_rate)
+    if(frontend::floatingPointCompare(request.sample_rate,0)!=0 && frontend::floatingPointCompare((request.sample_rate+(request.sample_rate*request.sample_rate_tolerance/100)),frontend_tuner_status[tuner_id].sample_rate) < 0 )
+        return false;
+
+    return true;
 }
 
-bool RFNoC_ProgrammableDevice_i::getTunerEnable(const std::string& allocation_id)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
+/*
+ * Private Method(s)
+ */
 
-    long idx = getTunerMapping(allocation_id);
-    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
-    return frontend_tuner_status[idx].enabled;
+void RFNoC_ProgrammableDevice_i::connectionTableChanged(const std::vector<connection_descriptor_struct> &oldValue, const std::vector<connection_descriptor_struct> &newValue)
+{
+    this->dataShort_out->updateConnectionFilter(newValue);
 }
 
-void RFNoC_ProgrammableDevice_i::setTunerOutputSampleRate(const std::string& allocation_id, double sr)
+CF::Device::UsageType RFNoC_ProgrammableDevice_i::updateUsageState()
 {
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__ << " allocation_id=" << allocation_id << " sr=" << sr);
-
-    long idx = getTunerMapping(allocation_id);
-    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
-    if(allocation_id != getControlAllocationId(idx)){
-        std::ostringstream msg;
-        msg << "setTunerOutputSampleRate|ID (" << allocation_id << ") does not have authorization to modify tuner.";
-        LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str());
-        throw FRONTEND::FrontendException(msg.str().c_str());
+    //LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
+    size_t tunerAllocated = 0;
+    for (size_t tuner_id = 0; tuner_id < tuner_allocation_ids.size(); tuner_id++)
+    {
+        if (!tuner_allocation_ids[tuner_id].control_allocation_id.empty())
+        {
+            tunerAllocated++;
+        }
+    }
+    // If no tuners are allocated, device is idle
+    if (tunerAllocated == 0)
+    {
+        return CF::Device::IDLE;
+    }
+    // If all tuners are allocated, device is busy
+    if (tunerAllocated == tuner_allocation_ids.size())
+    {
+        return CF::Device::BUSY;
     }
 
-    try {
-        try {
-            if (not frontend::validateRequest(125e3, 16e6, sr)) {
-                std::ostringstream msg;
-                msg << "setTunerOutputSampleRate|Invalid sample rate (" << sr <<")";
-                LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str() );
-                throw FRONTEND::BadParameterException(msg.str().c_str());
-            }
-        } catch (FRONTEND::BadParameterException) {
-            throw;
-        } catch (...) {
-            std::ostringstream msg;
-            msg << "setTunerOutputSampleRate|Could not retrieve tuner_id to radio channel number mapping";
-            LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
-            throw FRONTEND::FrontendException(msg.str().c_str());
-        }
-
-        if (frontend_tuner_status[idx].tuner_type == "RX_DIGITIZER") {
-            std::map<std::string, RxObject *>::iterator it = this->allocationIDToRx.find(allocation_id);
-
-            if (it == this->allocationIDToRx.end()) {
-                std::ostringstream msg;
-                msg << "setTunerOutputSampleRate|ID (" << allocation_id << ") does not map to RX object.";
-                LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
-                throw FRONTEND::BadParameterException(msg.str().c_str());
-            }
-
-            // If the freq has changed (change in stream) or the tuner is disabled, then set it as disabled
-            bool is_tuner_enabled = frontend_tuner_status[idx].enabled;
-
-            if (is_tuner_enabled) {
-                it->second->ddc->set_rx_streamer(false, it->second->ddcPort);
-            }
-
-            uhd::rfnoc::ddc_block_ctrl::sptr ddc = it->second->ddc;
-            size_t ddcPort = it->second->ddcPort;
-
-            uhd::device_addr_t args;
-
-            args["freq"] = "0.0";
-            args["input_rate"] = boost::lexical_cast<std::string>(this->radio->get_output_samp_rate(it->second->radioChannel));
-            args["output_rate"] = boost::lexical_cast<std::string>(sr);
-
-            try {
-                ddc->set_args(args, ddcPort);
-            } catch(uhd::value_error &e) {
-                std::ostringstream msg;
-                msg << "setTunerOutputSampleRate|Exception: " << e.what();
-                LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
-                throw FRONTEND::BadParameterException(msg.str().c_str());
-            } catch(...) {
-                throw;
-            }
-
-            // Get the actual output rate of the DDC
-            try {
-                std::string sampleRateString;
-
-                sampleRateString = ddc->get_arg("output_rate", ddcPort);
-
-                frontend_tuner_status[idx].sample_rate = boost::lexical_cast<double>(sampleRateString);
-            } catch(...) {
-                throw;
-            }
-
-            it->second->sri = create(frontend_tuner_status[idx].stream_id, frontend_tuner_status[idx]);
-            it->second->sri.mode = 1;
-
-            // update status from hw
-            if (it->second->rxThread) {
-                it->second->updateSRI = true;
-            } else if (it->second->connected) {
-                this->dataShort_out->pushSRI(it->second->sri);
-            }
-
-            // re-enable
-            if (is_tuner_enabled) {
-                it->second->ddc->set_rx_streamer(true, it->second->ddcPort);
-            }
-        } else if (frontend_tuner_status[idx].tuner_type == "TX") {
-            std::map<std::string, TxObject *>::iterator it = this->allocationIDToTx.find(allocation_id);
-
-            if (it == this->allocationIDToTx.end()) {
-                std::ostringstream msg;
-                msg << "setTunerOutputSampleRate|ID (" << allocation_id << ") does not map to TX object.";
-                LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
-                throw FRONTEND::BadParameterException(msg.str().c_str());
-            }
-
-            // If the freq has changed (change in stream) or the tuner is disabled, then set it as disabled
-            bool is_tuner_enabled = frontend_tuner_status[idx].enabled;
-
-            if (is_tuner_enabled) {
-                it->second->duc->set_tx_streamer(false, it->second->ducPort);
-            }
-
-            uhd::rfnoc::duc_block_ctrl::sptr duc = it->second->duc;
-            size_t ducPort = it->second->ducPort;
-
-            uhd::device_addr_t args;
-
-            args["input_rate"] = boost::lexical_cast<std::string>(sr);
-            args["output_rate"] = boost::lexical_cast<std::string>(this->radio->get_input_samp_rate(it->second->radioChannel));
-
-            try {
-                duc->set_args(args, ducPort);
-            } catch(uhd::value_error &e) {
-                std::ostringstream msg;
-                msg << "setTunerOutputSampleRate|Exception: " << e.what();
-                LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
-                throw FRONTEND::BadParameterException(msg.str().c_str());
-            } catch(...) {
-                throw;
-            }
-
-            // Get the actual output rate of the DUC
-            try {
-                std::string sampleRateString;
-
-                sampleRateString = duc->get_arg("input_rate", ducPort);
-
-                frontend_tuner_status[idx].sample_rate = boost::lexical_cast<double>(sampleRateString);
-            } catch(...) {
-                throw;
-            }
-
-            // re-enable
-            if (is_tuner_enabled) {
-                it->second->duc->set_tx_streamer(true, it->second->ducPort);
-            }
-        } else {
-            std::ostringstream msg;
-            msg << "setTunerGain|Invalid tuner type. Must be RX_DIGITIZER or TX";
-            LOG_ERROR(RFNoC_ProgrammableDevice_i,msg.str());
-            throw FRONTEND::BadParameterException(msg.str().c_str());
-        }
-    } catch (std::exception& e) {
-        std::ostringstream msg;
-        msg << "setTunerGain|Exception: " << e.what();
-        LOG_WARN(RFNoC_ProgrammableDevice_i,msg.str());
-        throw FRONTEND::FrontendException(msg.str().c_str());
-    }
-}
-
-double RFNoC_ProgrammableDevice_i::getTunerOutputSampleRate(const std::string& allocation_id)
-{
-    LOG_TRACE(RFNoC_ProgrammableDevice_i,__PRETTY_FUNCTION__);
-
-    long idx = getTunerMapping(allocation_id);
-    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
-    LOG_DEBUG(RFNoC_ProgrammableDevice_i,"getTunerOutputSampleRate|TUNER_SR=" << frontend_tuner_status[idx].sample_rate);
-    return frontend_tuner_status[idx].sample_rate;
+    // Else, device is active
+    return CF::Device::ACTIVE;
 }

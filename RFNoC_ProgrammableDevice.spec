@@ -23,6 +23,12 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  redhawk-devel >= 2.0
 Requires:       redhawk >= 2.0
 
+BuildRequires:  RFNoC_RH-devel
+Requires:       RFNoC_RH
+
+# Interface requirements
+BuildRequires:  frontendInterfaces >= 2.2 bulkioInterfaces >= 2.0
+Requires:       frontendInterfaces >= 2.2 bulkioInterfaces >= 2.0
 
 
 %description
@@ -72,7 +78,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,redhawk,redhawk,-)
-%dir %{_prefix}/dev/devices/RFNoC_ProgrammableDevice
+%dir %{_sdrroot}/dev/devices/RFNoC_ProgrammableDevice
 %{_prefix}/dev/devices/RFNoC_ProgrammableDevice/RFNoC_ProgrammableDevice.scd.xml
 %{_prefix}/dev/devices/RFNoC_ProgrammableDevice/RFNoC_ProgrammableDevice.prf.xml
 %{_prefix}/dev/devices/RFNoC_ProgrammableDevice/RFNoC_ProgrammableDevice.spd.xml

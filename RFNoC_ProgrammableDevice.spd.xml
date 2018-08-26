@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE softpkg PUBLIC "-//JTRS//DTD SCA V2.2.2 SPD//EN" "softpkg.dtd">
-<softpkg id="DCE:ed6d4eb0-ae6b-40fc-a359-b8c1d960e9c0" name="RFNoC_ProgrammableDevice" type="2.0.1">
+<softpkg id="DCE:ed6d4eb0-ae6b-40fc-a359-b8c1d960e9c0" name="RFNoC_ProgrammableDevice" type="2.0.9">
   <title></title>
   <author>
     <name>null</name>
@@ -35,5 +35,10 @@
     <humanlanguage name="EN"/>
     <os name="Linux"/>
     <processor name="armv7l"/>
+    <dependency type="other">
+      <softpkgref>
+        <localfile name="/deps/RFNoC_RH/RFNoC_RH.spd.xml"/>
+      </softpkgref>
+    </dependency>
   </implementation>
 </softpkg>

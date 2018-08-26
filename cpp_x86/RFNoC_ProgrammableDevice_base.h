@@ -7,9 +7,9 @@
 #include <ossie/AggregateDevice_impl.h>
 #include <ossie/ThreadedComponent.h>
 
+#include "port_impl.h"
 #include <bulkio/bulkio.h>
 #include "struct_props.h"
-#include "port_impl.h"
 
 class RFNoC_ProgrammableDevice_base : public ExecutableDevice_impl, public virtual POA_CF::AggregateExecutableDevice, public AggregateDevice_impl, protected ThreadedComponent
 {
@@ -45,6 +45,10 @@ class RFNoC_ProgrammableDevice_base : public ExecutableDevice_impl, public virtu
         std::string os_name;
         /// Property: os_version
         std::string os_version;
+        /// Property: desiredRxChannels
+        unsigned char desiredRxChannels;
+        /// Property: desiredTxChannels
+        unsigned char desiredTxChannels;
         /// Property: frontend_listener_allocation
         frontend_listener_allocation_struct frontend_listener_allocation;
         /// Property: frontend_tuner_allocation
@@ -65,6 +69,8 @@ class RFNoC_ProgrammableDevice_base : public ExecutableDevice_impl, public virtu
         FRONTEND_DigitalTuner_In_i *DigitalTuner_in;
         /// Port: RFInfo_in
         FRONTEND_RFInfo_In_i *RFInfo_in;
+        /// Port: dataShort_in
+        bulkio::InShortPort *dataShort_in;
         /// Port: dataShort_out
         bulkio::OutShortPort *dataShort_out;
 

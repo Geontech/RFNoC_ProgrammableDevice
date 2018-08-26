@@ -71,9 +71,11 @@
     <description>Frontend Interfaces v2.0 main allocation structure</description>
     <simple id="FRONTEND::tuner_allocation::tuner_type" name="tuner_type" type="string">
       <description>Example Tuner Types: TX, RX, CHANNELIZER, DDC, RX_DIGITIZER, RX_DIGTIZIER_CHANNELIZER</description>
+      <value></value>
     </simple>
     <simple id="FRONTEND::tuner_allocation::allocation_id" name="allocation_id" type="string">
       <description>The allocation_id set by the caller. Used by the caller to reference the device uniquely</description>
+      <value></value>
     </simple>
     <simple id="FRONTEND::tuner_allocation::center_frequency" name="center_frequency" type="double">
       <description>Requested center frequency.</description>
@@ -107,9 +109,11 @@ False: Does not need control and can just attach to any currently tasked device 
     </simple>
     <simple id="FRONTEND::tuner_allocation::group_id" name="group_id" type="string">
       <description>Unique identifier that specifies a group of device. Must match group_id on the device</description>
+      <value></value>
     </simple>
     <simple id="FRONTEND::tuner_allocation::rf_flow_id" name="rf_flow_id" type="string">
       <description>Optional. Specifies a certain RF flow to allocate against. If left empty, it will match all frontend devices.</description>
+      <value></value>
     </simple>
     <configurationkind kindtype="allocation"/>
   </struct>

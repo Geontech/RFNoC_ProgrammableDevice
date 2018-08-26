@@ -10,31 +10,18 @@ AC_CORBA_ORB
 OSSIE_CHECK_OSSIE
 OSSIE_SDRROOT_AS_PREFIX
 
-AC_ARG_WITH(domainname,
-	AS_HELP_STRING([--with-domainname=[domain name]], [Provide a domain name to the generated node, defaults to REDHAWK_DEV]),
-	rfnoc_node_domain=$withval,
-	rfnoc_node_domain=REDHAWK_DEV)
-AC_SUBST(DOMAINNAME, $rfnoc_node_domain)
-
-AC_ARG_WITH(usrptype,
-        AS_HELP_STRING([--with-usrptype=[usrp type]], [Provide a USRP type to the generated node, defaults to x3x0]),
-        rfnoc_node_type=$withval,
-        rfnoc_node_type=x3x0)
-AC_SUBST(USRPTYPE, $rfnoc_node_type)
-
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 # Dependencies
 PKG_CHECK_MODULES([PROJECTDEPS], [ossie >= 2.0 omniORB4 >= 4.1.0])
 PKG_CHECK_MODULES([INTERFACEDEPS], [frontend >= 2.2, bulkio >= 2.0])
-PKG_CHECK_MODULES([LIBRFNOCRH], [RFNoC_RH >= 1.0.0])
-PKG_CHECK_MODULES([LIBUHD], [uhd >= 3.5.3])
+RH_SOFTPKG_CXX([/deps/RFNoC_RH/RFNoC_RH.spd.xml])
 OSSIE_ENABLE_LOG4CXX
 AX_BOOST_BASE([1.41])
-AX_BOOST_FILESYSTEM
 AX_BOOST_SYSTEM
 AX_BOOST_THREAD
 AX_BOOST_REGEX
+AX_BOOST_FILESYSTEM
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

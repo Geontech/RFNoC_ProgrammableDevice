@@ -15,4 +15,4 @@ redhawk_SOURCES_auto += main.cpp
 redhawk_SOURCES_auto += port_impl.cpp
 redhawk_SOURCES_auto += port_impl.h
 redhawk_SOURCES_auto += struct_props.h
-redhawk_INCLUDES_auto = -I/home/pwolfram/git/uhd/host/include
+redhawk_INCLUDES_auto = -I/var/RedHawk-2.1.2/sdr/dom/deps/RFNoC_RH/include

@@ -7,9 +7,9 @@
 #include <ossie/AggregateDevice_impl.h>
 #include <ossie/ThreadedComponent.h>
 
+#include "port_impl.h"
 #include <bulkio/bulkio.h>
 #include "struct_props.h"
-#include "port_impl.h"
 
 class RFNoC_ProgrammableDevice_base : public ExecutableDevice_impl, public virtual POA_CF::AggregateExecutableDevice, public AggregateDevice_impl, protected ThreadedComponent
 {

@@ -6,7 +6,7 @@ if [ "$1" = "rpm" ]; then
         mydir=`dirname $0`
         tmpdir=`mktemp -d`
         cp -r ${mydir} ${tmpdir}/RFNoC_ProgrammableDevice-1.0.0
-        tar czf ${tmpdir}/RFNoC_ProgrammableDevice-1.0.0.tar.gz --exclude=".svn" -C ${tmpdir} RFNoC_ProgrammableDevice-1.0.0
+        tar czf ${tmpdir}/RFNoC_ProgrammableDevice-1.0.0.tar.gz --exclude=".svn" --exclude=".git" -C ${tmpdir} RFNoC_ProgrammableDevice-1.0.0
         rpmbuild -ta ${tmpdir}/RFNoC_ProgrammableDevice-1.0.0.tar.gz
         rm -rf $tmpdir
     else
@@ -14,7 +14,7 @@ if [ "$1" = "rpm" ]; then
         exit 1
     fi
 else
-    for impl in cpp_x86 cpp_armv7l ; do
+    for impl in cpp_armv7l ; do
         if [ ! -d "$impl" ]; then
             echo "Directory '$impl' does not exist...continuing"
             continue
@@ -38,6 +38,10 @@ else
             ./reconf && ./configure && make $*
         else
             echo "No build.sh found for $impl"
+        fi
+        retval=$?
+        if [ $retval != '0' ]; then
+            exit $retval
         fi
         cd -
     done

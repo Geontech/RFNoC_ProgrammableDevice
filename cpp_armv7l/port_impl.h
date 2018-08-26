@@ -3,6 +3,7 @@
 
 #include <boost/thread/locks.hpp>
 #include <ossie/Port_impl.h>
+#include <ossie/debug.h>
 #include <FRONTEND/TunerControl.h>
 #include <FRONTEND/RFInfo.h>
 

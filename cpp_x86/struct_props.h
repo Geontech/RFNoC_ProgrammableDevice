@@ -394,6 +394,7 @@ struct frontend_tuner_status_struct_struct {
     double bandwidth;
     double center_frequency;
     bool enabled;
+    double gain;
     std::string group_id;
     std::string rf_flow_id;
     double sample_rate;
@@ -425,6 +426,9 @@ inline bool operator>>= (const CORBA::Any& a, frontend_tuner_status_struct_struc
     }
     if (props.contains("FRONTEND::tuner_status::enabled")) {
         if (!(props["FRONTEND::tuner_status::enabled"] >>= s.enabled)) return false;
+    }
+    if (props.contains("FRONTEND::tuner_status::gain")) {
+        if (!(props["FRONTEND::tuner_status::gain"] >>= s.gain)) return false;
     }
     if (props.contains("FRONTEND::tuner_status::group_id")) {
         if (!(props["FRONTEND::tuner_status::group_id"] >>= s.group_id)) return false;
@@ -461,6 +465,8 @@ inline void operator<<= (CORBA::Any& a, const frontend_tuner_status_struct_struc
  
     props["FRONTEND::tuner_status::enabled"] = s.enabled;
  
+    props["FRONTEND::tuner_status::gain"] = s.gain;
+ 
     props["FRONTEND::tuner_status::group_id"] = s.group_id;
  
     props["FRONTEND::tuner_status::rf_flow_id"] = s.rf_flow_id;
@@ -487,6 +493,8 @@ inline bool operator== (const frontend_tuner_status_struct_struct& s1, const fro
     if (s1.center_frequency!=s2.center_frequency)
         return false;
     if (s1.enabled!=s2.enabled)
+        return false;
+    if (s1.gain!=s2.gain)
         return false;
     if (s1.group_id!=s2.group_id)
         return false;
