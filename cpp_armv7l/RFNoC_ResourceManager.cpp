@@ -6,8 +6,9 @@ PREPARE_LOGGING(RFNoC_ResourceManager)
 /*
  * Constructor(s) and/or Destructor
  */
-RFNoC_ResourceManager::RFNoC_ResourceManager(RFNoC_ProgrammableDevice_i *programmable, uhd::rfnoc::graph::sptr graph) :
-    programmable(programmable)
+RFNoC_ResourceManager::RFNoC_ResourceManager(Device_impl *parent, RFNoC_ProgrammableDevice_i *programmable) :
+    parent(parent),
+	programmable(programmable)
 {
     LOG_TRACE(RFNoC_ResourceManager, __PRETTY_FUNCTION__);
 

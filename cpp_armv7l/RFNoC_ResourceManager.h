@@ -36,13 +36,13 @@ class RFNoC_ResourceManager
 
 	// Constructor(s) and/or Destructor
     public:
-        RFNoC_ResourceManager(RFNoC_ProgrammableDevice_i *programmable);
+        RFNoC_ResourceManager(Device_impl *parent, RFNoC_ProgrammableDevice_i *programmable);
 
         ~RFNoC_ResourceManager();
 
     // Getter(s) and/or Setters
     public:
-        Device_impl* getParent() const { return this->programmable; }
+        Device_impl* getParent() const { return this->parent; }
 
     // Public Method(s)
     public:
@@ -72,6 +72,7 @@ class RFNoC_ResourceManager
         boost::shared_ptr<boost::thread> connectionThread;
         uhd::rfnoc::graph::sptr graph;
         RFNoC_ResourceMap idToResource;
+        Device_impl *parent;
         std::vector<IncomingConnection> pendingConnections;
         RFNoC_ProgrammableDevice_i *programmable;
         boost::mutex resourceLock;
