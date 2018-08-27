@@ -197,8 +197,8 @@ void RFNoC_Resource::newIncomingConnection(const std::string &ID, const RFNoC_RH
 
     IncomingConnection connection;
     connection.portHash = hash;
-    connection.resourceID = this->ID;
-    connection.streamID = ID;
+    connection.resourceId = this->ID;
+    connection.streamId = ID;
 
     this->resourceManager->registerIncomingConnection(connection);
 

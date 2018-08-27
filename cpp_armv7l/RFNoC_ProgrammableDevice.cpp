@@ -594,7 +594,7 @@ bool RFNoC_ProgrammableDevice_i::loadHardware(HwLoadStatusStruct& requestStatus)
     initializeRadioChain();
 
     // Instantiate the RF-NoC Resource Manager
-    this->resourceManager = boost::make_shared<RFNoC_ResourceManager>(this, this->graph);
+    this->resourceManager = boost::make_shared<RFNoC_ResourceManager>(this, this);
 
     // Set the active device ID
     this->activeDeviceId = requestStatus.requester_id;
