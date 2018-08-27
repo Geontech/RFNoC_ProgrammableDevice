@@ -53,7 +53,7 @@ struct TxObject
 
 // Forward Declaration(s)
 class RFNoC_ProgrammableDevice_i;
-class RFNoC_ResourceManager.
+class RFNoC_ResourceManager;
 
 // Type Definition(s)
 
