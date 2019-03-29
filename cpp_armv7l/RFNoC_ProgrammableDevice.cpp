@@ -323,6 +323,12 @@ uhd::rfnoc::block_ctrl_base::sptr RFNoC_ProgrammableDevice_i::getBlock(RFNoC_RH:
 RFNoC_RH::BlockDescriptor RFNoC_ProgrammableDevice_i::getBlockDescriptorFromHash(RFNoC_RH::PortHashType portHash)
 {
 	LOG_TRACE(RFNoC_ProgrammableDevice_i, __PRETTY_FUNCTION__);
+	RFNoC_RH::BlockDescriptor descriptor = this->resourceManager->getUsesBlockDescriptorFromHash(portHash);
+	if (this->usrp->has_block(descriptor.blockId))
+	{
+		return descriptor;
+	}
+	return this->resourceManager->getProvidesBlockDescriptorFromHash(portHash);
 }
 
 void RFNoC_ProgrammableDevice_i::incomingConnectionAdded(const std::string &resourceId,
