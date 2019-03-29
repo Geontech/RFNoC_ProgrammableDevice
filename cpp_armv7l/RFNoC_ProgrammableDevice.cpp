@@ -9,6 +9,10 @@
 
 PREPARE_LOGGING(RFNoC_ProgrammableDevice_i)
 
+static const std::string RADIO_BLOCK_NAME = "Radio";
+static const std::string DDC_BLOCK_NAME   = "DDC";
+static const std::string DUC_BLOCK_NAME   = "DUC";
+
 /*
  * Constructor(s) and/or Destructor
  */
@@ -1287,13 +1291,18 @@ void RFNoC_ProgrammableDevice_i::gatherBlocks()
 		return;
 	}
 
-	std::vector<uhd::rfnoc::block_id_t> blockIds = this->usrp->find_blocks("");
+	std::vector<uhd::rfnoc::block_id_t> radioIds = this->usrp->find_blocks(RADIO_BLOCK_NAME);
+	std::vector<uhd::rfnoc::block_id_t> ddcIds   = this->usrp->find_blocks(DDC_BLOCK_NAME);
+	std::vector<uhd::rfnoc::block_id_t> ducIds   = this->usrp->find_blocks(DUC_BLOCK_NAME);
+	std::vector<uhd::rfnoc::block_id_t> blockIds = radioIds;
+	blockIds.insert(blockIds.end(), ddcIds.begin(), ddcIds.end());
+	blockIds.insert(blockIds.end(), ducIds.begin(), ducIds.end());
 
 	for (size_t i = 0; i < blockIds.size(); ++i)
 	{
 		LOG_DEBUG(RFNoC_ProgrammableDevice_i, "Getting block with block ID: " << blockIds[i].get());
 
-		if (blockIds[i].match("Radio"))
+		if (blockIds[i].match(RADIO_BLOCK_NAME))
 		{
 			try
 			{
@@ -1304,7 +1313,7 @@ void RFNoC_ProgrammableDevice_i::gatherBlocks()
 				LOG_WARN(RFNoC_ProgrammableDevice_i, "An error occurred while retrieving block");
 			}
 		}
-		else if (blockIds[i].match("DDC"))
+		else if (blockIds[i].match(DDC_BLOCK_NAME))
 		{
 			uhd::rfnoc::ddc_block_ctrl::sptr ddc;
 
@@ -1320,7 +1329,7 @@ void RFNoC_ProgrammableDevice_i::gatherBlocks()
 
 			this->ddcs.push_back(ddc);
 		}
-		else if (blockIds[i].match("DUC"))
+		else if (blockIds[i].match(DUC_BLOCK_NAME))
 		{
 			uhd::rfnoc::duc_block_ctrl::sptr duc;
 
